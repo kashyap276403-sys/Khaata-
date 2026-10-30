@@ -83,8 +83,8 @@ class StatementScreen extends StatelessWidget {
                 children: [
                   Expanded(
                     child: FilledButton.tonalIcon(
-                      style:
-                          FilledButton.styleFrom(minimumSize: const Size(0, 52)),
+                      style: FilledButton.styleFrom(
+                          minimumSize: const Size(0, 52)),
                       onPressed: () => confirmAndShareFile(
                         context,
                         fileName: 'statement_$safeName.csv',
@@ -98,11 +98,10 @@ class StatementScreen extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: FilledButton.tonalIcon(
-                      style:
-                          FilledButton.styleFrom(minimumSize: const Size(0, 52)),
+                      style: FilledButton.styleFrom(
+                          minimumSize: const Size(0, 52)),
                       onPressed: () async {
-                        final bytes =
-                            await buildStatementPdf(st, window.label);
+                        final bytes = await buildStatementPdf(st, window.label);
                         if (!context.mounted) return;
                         await confirmAndShareFile(
                           context,

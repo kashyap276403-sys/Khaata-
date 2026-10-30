@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import '../core/money.dart';
@@ -42,8 +41,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
             tomorrow.millisecondsSinceEpoch, 'Aaj (${_d(today)})');
       case _Period.week:
         final from = DateTime(n.year, n.month, n.day - 6);
-        return ReportWindow(from.millisecondsSinceEpoch,
-            tomorrow.millisecondsSinceEpoch, 'Pichhle 7 din (${_d(from)} - ${_d(today)})');
+        return ReportWindow(
+            from.millisecondsSinceEpoch,
+            tomorrow.millisecondsSinceEpoch,
+            'Pichhle 7 din (${_d(from)} - ${_d(today)})');
       case _Period.month:
         final from = DateTime(n.year, n.month, 1);
         final next = DateTime(n.year, n.month + 1, 1);
@@ -126,7 +127,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   child: Center(child: CircularProgressIndicator()),
                 )
               else ...[
-                _Tile(label: 'Total Udhaari', value: formatPaise(s.udhaariPaise)),
+                _Tile(
+                    label: 'Total Udhaari', value: formatPaise(s.udhaariPaise)),
                 _Tile(label: 'Total Jama', value: formatPaise(s.jamaPaise)),
                 _Tile(
                   label: 'Is dauraan baaki me badlaav',
@@ -143,7 +145,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Jama kaise mila', style: theme.textTheme.titleSmall),
+                        Text('Jama kaise mila',
+                            style: theme.textTheme.titleSmall),
                         const SizedBox(height: 6),
                         Text('Cash: ${formatPaise(s.jamaCashPaise)}'),
                         Text('UPI: ${formatPaise(s.jamaUpiPaise)}'),
@@ -201,8 +204,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Text('Customer-wise (statement ke liye dabayein)',
                     style: theme.textTheme.titleMedium),
                 const SizedBox(height: 8),
-                if (s.rows.isEmpty)
-                  const Text('Is period me koi entry nahi.'),
+                if (s.rows.isEmpty) const Text('Is period me koi entry nahi.'),
                 for (final r in s.rows)
                   ListTile(
                     contentPadding: EdgeInsets.zero,

@@ -82,8 +82,7 @@ void main() {
       final ba = await customers.balanceFor(a.id);
       final bb = await customers.balanceFor(b.id);
       expect(s.closingOutstandingPaise, ba + bb);
-      expect(s.rows.fold<int>(0, (t, r) => t + r.closingBalancePaise),
-          ba + bb);
+      expect(s.rows.fold<int>(0, (t, r) => t + r.closingBalancePaise), ba + bb);
       expect(s.rows.map((r) => r.name), ['Asha', 'Bunty']);
     });
 
@@ -147,8 +146,8 @@ void main() {
 
     test('unknown or deleted customer returns null', () async {
       final (a, _) = await seed();
-      expect(
-          await reports.statement(customerId: 'nope', fromMs: 0, toMs: 1), isNull);
+      expect(await reports.statement(customerId: 'nope', fromMs: 0, toMs: 1),
+          isNull);
       await customers.softDelete(a.id);
       expect(await reports.statement(customerId: a.id, fromMs: 0, toMs: 1),
           isNull);
@@ -200,7 +199,8 @@ void main() {
       // Udhaari rows carry no payment method.
       final udhaariLine =
           csv.split('\r\n').firstWhere((l) => l.contains(',Udhaari,'));
-      expect(udhaariLine.contains('Cash') || udhaariLine.contains('UPI'), isFalse);
+      expect(
+          udhaariLine.contains('Cash') || udhaariLine.contains('UPI'), isFalse);
     });
 
     test('PDFs are generated and Hindi text does not crash', () async {
@@ -215,8 +215,8 @@ void main() {
       final s = await reports.summary(fromMs: from, toMs: to);
       final pdf = await buildReportPdf(s, 'Oct 2026');
       expect(String.fromCharCodes(pdf.take(4)), '%PDF');
-      final st = (await reports.statement(
-          customerId: c.id, fromMs: from, toMs: to))!;
+      final st =
+          (await reports.statement(customerId: c.id, fromMs: from, toMs: to))!;
       final pdf2 = await buildStatementPdf(st, 'Oct 2026');
       expect(String.fromCharCodes(pdf2.take(4)), '%PDF');
       expect(pdfSafe('रमेश Kumar'), '???? Kumar');

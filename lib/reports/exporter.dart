@@ -23,7 +23,10 @@ String rupeesPlain(int paise) {
 String csvCell(String? v) {
   var s = v ?? '';
   if (s.isNotEmpty && '=+-@\t\r'.contains(s[0])) s = "'$s";
-  if (s.contains(',') || s.contains('"') || s.contains('\n') || s.contains('\r')) {
+  if (s.contains(',') ||
+      s.contains('"') ||
+      s.contains('\n') ||
+      s.contains('\r')) {
     s = '"${s.replaceAll('"', '""')}"';
   }
   return s;
@@ -35,7 +38,8 @@ List<int> csvBytes(String csv) => [0xEF, 0xBB, 0xBF, ...utf8.encode(csv)];
 String _row(List<String?> cells) => cells.map(csvCell).join(',');
 
 String _typeText(LedgerTxn t) {
-  if (t.isReversal) return t.type == TxnType.udhaari ? 'Reversal (Udhaari)' : 'Reversal (Jama)';
+  if (t.isReversal)
+    return t.type == TxnType.udhaari ? 'Reversal (Udhaari)' : 'Reversal (Jama)';
   return t.type == TxnType.udhaari ? 'Udhaari' : 'Jama';
 }
 
@@ -58,14 +62,23 @@ String buildReportCsv(ReportSummary s, String periodLabel) {
   line(['Total Udhaari (Rs)', rupeesPlain(s.udhaariPaise)]);
   line(['Total Jama (Rs)', rupeesPlain(s.jamaPaise)]);
   line(['Net change in outstanding (Rs)', rupeesPlain(s.netPaise)]);
-  line(['Outstanding at period end (Rs)', rupeesPlain(s.closingOutstandingPaise)]);
+  line([
+    'Outstanding at period end (Rs)',
+    rupeesPlain(s.closingOutstandingPaise)
+  ]);
   line(['Jama via Cash (Rs)', rupeesPlain(s.jamaCashPaise)]);
   line(['Jama via UPI (Rs)', rupeesPlain(s.jamaUpiPaise)]);
   line(['Jama via Other (Rs)', rupeesPlain(s.jamaOtherPaise)]);
   line(['Entries', '${s.entryCount}']);
   line(['Of which reversals', '${s.reversalCount}']);
   line([]);
-  line(['Customer ID', 'Customer', 'Udhaari (Rs)', 'Jama (Rs)', 'Closing balance (Rs)']);
+  line([
+    'Customer ID',
+    'Customer',
+    'Udhaari (Rs)',
+    'Jama (Rs)',
+    'Closing balance (Rs)'
+  ]);
   for (final r in s.rows) {
     line([
       r.code,
@@ -88,7 +101,15 @@ String buildStatementCsv(CustomerStatement st, String periodLabel) {
   line(['Period', periodLabel]);
   line(['Opening balance (Rs)', rupeesPlain(st.openingPaise)]);
   line([]);
-  line(['Date', 'Type', 'Method', 'Udhaari (Rs)', 'Jama (Rs)', 'Balance (Rs)', 'Note']);
+  line([
+    'Date',
+    'Type',
+    'Method',
+    'Udhaari (Rs)',
+    'Jama (Rs)',
+    'Balance (Rs)',
+    'Note'
+  ]);
   for (final l in st.lines) {
     final t = l.txn;
     line([
@@ -204,7 +225,9 @@ Future<Uint8List> buildStatementPdf(
                 formatDateTime(l.txn.createdAt),
                 _typeText(l.txn),
                 _methodText(l.txn),
-                l.txn.type == TxnType.udhaari ? pdfMoney(l.txn.amountPaise) : '',
+                l.txn.type == TxnType.udhaari
+                    ? pdfMoney(l.txn.amountPaise)
+                    : '',
                 l.txn.type == TxnType.jama ? pdfMoney(l.txn.amountPaise) : '',
                 pdfMoney(l.runningBalancePaise),
               ],

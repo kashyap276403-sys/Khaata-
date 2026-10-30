@@ -160,7 +160,8 @@ class CustomerDetailScreen extends StatelessWidget {
                           MaterialPageRoute<void>(
                             builder: (_) => StatementScreen(
                               customerId: c.id,
-                              window: const ReportWindow(0, far, 'Poora hisaab'),
+                              window:
+                                  const ReportWindow(0, far, 'Poora hisaab'),
                             ),
                           ),
                         );
