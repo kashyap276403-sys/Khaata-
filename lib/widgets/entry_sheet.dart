@@ -97,7 +97,7 @@ class _EntrySheetState extends State<_EntrySheet> {
         customerId: widget.customerId,
         type: widget.type,
         amountPaise: paise,
-        method: _method,
+        method: widget.type == TxnType.jama ? _method : PayMethod.other,
         idempotencyKey: _key,
       );
       navigator.pop();
@@ -166,21 +166,25 @@ class _EntrySheetState extends State<_EntrySheet> {
                 ),
             ],
           ),
-          const SizedBox(height: 16),
-          Text('Kaise (sirf record ke liye)',
-              style: theme.textTheme.bodyMedium),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            children: [
-              for (final m in PayMethod.values)
-                ChoiceChip(
-                  label: Text(methodLabel(m)),
-                  selected: _method == m,
-                  onSelected: (_) => setState(() => _method = m),
-                ),
-            ],
-          ),
+          // Udhaari = no money received, so no payment method.
+          // The method label only applies to Jama (money received).
+          if (!isUdhaari) ...[
+            const SizedBox(height: 16),
+            Text('Paise kaise mile (sirf record ke liye)',
+                style: theme.textTheme.bodyMedium),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: [
+                for (final m in PayMethod.values)
+                  ChoiceChip(
+                    label: Text(methodLabel(m)),
+                    selected: _method == m,
+                    onSelected: (_) => setState(() => _method = m),
+                  ),
+              ],
+            ),
+          ],
           const SizedBox(height: 20),
           FilledButton(
             onPressed: _saving ? null : _save,

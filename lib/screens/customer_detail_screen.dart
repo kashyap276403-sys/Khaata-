@@ -7,6 +7,8 @@ import '../services.dart';
 import '../widgets/entry_sheet.dart';
 import '../widgets/txn_tile.dart';
 import 'customer_form_screen.dart';
+import 'reports_screen.dart' show ReportWindow;
+import 'statement_screen.dart';
 
 class _Detail {
   const _Detail(this.customer, this.balancePaise, this.txns);
@@ -152,6 +154,16 @@ class CustomerDetailScreen extends StatelessWidget {
                             builder: (_) => CustomerFormScreen(existing: c),
                           ),
                         );
+                      } else if (v == 'statement') {
+                        const far = 4102444800000; // year 2100
+                        await Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => StatementScreen(
+                              customerId: c.id,
+                              window: const ReportWindow(0, far, 'Poora hisaab'),
+                            ),
+                          ),
+                        );
                       } else if (v == 'archive') {
                         final nav = Navigator.of(context);
                         await services.customers.setArchived(c.id, true);
@@ -162,6 +174,8 @@ class CustomerDetailScreen extends StatelessWidget {
                     },
                     itemBuilder: (_) => const [
                       PopupMenuItem(value: 'edit', child: Text('Edit')),
+                      PopupMenuItem(
+                          value: 'statement', child: Text('Statement')),
                       PopupMenuItem(value: 'archive', child: Text('Archive')),
                       PopupMenuItem(value: 'delete', child: Text('Delete')),
                     ],

@@ -39,6 +39,8 @@ class LedgerRepository {
     }
     final ts = (now ?? DateTime.now()).millisecondsSinceEpoch;
     final cleanNote = (note?.trim().isEmpty ?? true) ? null : note!.trim();
+    // Udhaari moves no money, so it never carries Cash/UPI.
+    if (type == TxnType.udhaari) method = PayMethod.other;
 
     final result = await _db.transaction<(LedgerTxn, bool)>((txn) async {
       if (idempotencyKey != null) {

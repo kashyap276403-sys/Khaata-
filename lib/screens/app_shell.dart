@@ -4,7 +4,7 @@ import 'customers_screen.dart';
 import 'home_screen.dart';
 import 'quick_entry_screen.dart';
 import 'settings_screen.dart';
-import 'placeholder_screen.dart';
+import 'reports_screen.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -20,11 +20,7 @@ class _AppShellState extends State<AppShell> {
     HomeScreen(),
     CustomersScreen(),
     QuickEntryScreen(),
-    PlaceholderScreen(
-      title: 'Reports',
-      message: 'Daily, weekly aur monthly reports baad ke phase me aayengi.',
-      icon: Icons.bar_chart,
-    ),
+    ReportsScreen(),
     SettingsScreen(),
   ];
 

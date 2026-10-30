@@ -220,6 +220,28 @@ void main() {
     });
   });
 
+  group('payment method rule', () {
+    test('udhaari never stores cash/upi; jama keeps its method', () async {
+      final c = await customers.add(name: 'Asha');
+      final u = await ledger.addTransaction(
+        customerId: c.id,
+        type: TxnType.udhaari,
+        amountPaise: 1000,
+        method: PayMethod.upi,
+      );
+      final j = await ledger.addTransaction(
+        customerId: c.id,
+        type: TxnType.jama,
+        amountPaise: 500,
+        method: PayMethod.upi,
+      );
+      expect(u.method, PayMethod.other);
+      expect(j.method, PayMethod.upi);
+      final rows = await ledger.transactionsFor(c.id);
+      expect(rows.firstWhere((t) => t.id == u.id).method, PayMethod.other);
+    });
+  });
+
   group('quick entry helpers', () {
     test('recentCustomers orders by latest entry', () async {
       final a = await customers.add(name: 'Asha');

@@ -19,8 +19,9 @@ Nothing has been tested on a real phone by the developer yet.
 | Quick Entry tab (type, customer search, recent customers, repeat last) | Written, not yet built |
 | History screen (entries with date filter/search/sort, activity log) | Written, not yet built |
 | Trash screen (30-day retention, restore, permanent delete with tombstones) | Written, not yet built |
+| Reports (today / 7 days / month / custom range), customer statements, CSV and PDF export | Written, not yet built |
 | Voice entry | Pending |
-| Reports, CSV/PDF, reminders, settings/customization | Pending |
+| Reminders, settings/customization | Pending |
 | Google Sign-In, Drive encrypted backup | Pending |
 | Signed release APK + GitHub Releases | Pending |
 
@@ -35,6 +36,12 @@ reversal entries; history is never edited.
 Actions tab > **Build debug APK** > Run workflow. The first run generates the `android/`
 folder (applicationId `com.aurax.khaata`). Commit that folder afterwards so the
 applicationId stays stable. The debug APK is attached as a workflow artifact.
+
+## Known limits
+
+- PDF export uses the built-in font: Hindi/non-Latin characters show as `?` and money is
+  written as `Rs`. CSV keeps full Unicode. A bundled Unicode font is planned.
+- Udhaari entries carry no Cash/UPI label (no money moves); the label applies to Jama only.
 
 ## Rules
 

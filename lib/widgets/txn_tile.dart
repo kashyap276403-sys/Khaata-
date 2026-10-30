@@ -34,7 +34,11 @@ class TxnTile extends StatelessWidget {
         : (isUdhaari ? 'Udhaari' : 'Jama');
     final subtitle = [
       if (customerName != null) customerName!,
-      '${formatDateTime(txn.createdAt)} · ${methodLabel(txn.method)}',
+      // Method is only meaningful for money received (a real Jama).
+      if (txn.type == TxnType.jama && !txn.isReversal)
+        '${formatDateTime(txn.createdAt)} · ${methodLabel(txn.method)}'
+      else
+        formatDateTime(txn.createdAt),
     ].join('\n');
 
     return ListTile(

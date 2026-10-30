@@ -82,7 +82,9 @@ String describeActivity(ActivityItem a) {
       final type = d['type'] == 'udhaari' ? 'Udhaari' : 'Jama';
       final amt = d['amount_paise'];
       final amount = amt is num ? formatPaise(amt.toInt()) : '';
-      return '$type $amount (${_methodText(d['method'])})$who';
+      final method =
+          d['type'] == 'jama' ? ' (${_methodText(d['method'])})' : '';
+      return '$type $amount$method$who';
     case 'transaction.reverse':
       final amt = d['amount_paise'];
       final amount = amt is num ? formatPaise(amt.toInt()) : '';

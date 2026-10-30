@@ -90,8 +90,9 @@ class _QuickEntryScreenState extends State<QuickEntryScreen> {
                       ),
                       subtitle: Text(
                         '${data.last!.txn.type == TxnType.udhaari ? 'Udhaari' : 'Jama'} '
-                        '${formatPaise(data.last!.txn.amountPaise)} '
-                        '(${methodLabel(data.last!.txn.method)}). Save se pehle check hoga.',
+                        '${formatPaise(data.last!.txn.amountPaise)}'
+                        '${data.last!.txn.type == TxnType.jama ? ' (${methodLabel(data.last!.txn.method)})' : ''}. '
+                        'Save se pehle check hoga.',
                       ),
                       onTap: () => showEntrySheet(
                         context,
