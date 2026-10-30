@@ -295,8 +295,8 @@ LEFT JOIN (
           whereArgs: [id]);
       await txn
           .delete('transactions', where: 'customer_id = ?', whereArgs: [id]);
-      await txn.delete('reminder_state',
-          where: 'customer_id = ?', whereArgs: [id]);
+      await txn
+          .delete('reminder_state', where: 'customer_id = ?', whereArgs: [id]);
       await txn.delete('customers', where: 'id = ?', whereArgs: [id]);
 
       await txn.insert('tombstones',

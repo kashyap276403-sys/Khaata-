@@ -9,7 +9,8 @@ import 'data/report_repository.dart';
 
 /// Everything the UI needs from the data layer.
 class AppServices {
-  AppServices._(this.db, this.bus, this.customers, this.ledger, this.reports, this.reminders);
+  AppServices._(this.db, this.bus, this.customers, this.ledger, this.reports,
+      this.reminders);
 
   factory AppServices.fromDatabase(Database db) {
     final bus = ChangeBus();

@@ -75,8 +75,7 @@ void main() {
       await customers.setArchived(c.id, false);
       final rows = await db.query('audit_log',
           where: "entity = 'customer'", orderBy: 'at, rowid');
-      expect(rows.map((r) => r['action']),
-          ['create', 'archive', 'unarchive']);
+      expect(rows.map((r) => r['action']), ['create', 'archive', 'unarchive']);
     });
   });
 
@@ -108,10 +107,11 @@ void main() {
       final c = await owing('Late', due: day(27));
       await reminders.snooze(c.id, days: 3, now: now);
       expect(await reminders.due(now: now), isEmpty);
-      expect(await reminders.due(now: now.add(const Duration(days: 2))),
-          isEmpty);
       expect(
-          (await reminders.due(now: now.add(const Duration(days: 3, minutes: 1))))
+          await reminders.due(now: now.add(const Duration(days: 2))), isEmpty);
+      expect(
+          (await reminders.due(
+                  now: now.add(const Duration(days: 3, minutes: 1))))
               .length,
           1);
     });
@@ -175,8 +175,8 @@ void main() {
         });
         await v1.close();
 
-        final v3 = await AppDatabase.open(
-            path: path, factory: databaseFactoryFfi);
+        final v3 =
+            await AppDatabase.open(path: path, factory: databaseFactoryFfi);
         expect(await v3.getVersion(), 3);
         final repo = ReminderRepository(v3, ChangeBus());
         final due = await repo.due(now: now);

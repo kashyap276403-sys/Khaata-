@@ -67,7 +67,8 @@ class RemindersScreen extends StatelessWidget {
                               children: [
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(r.customer.name,
                                           style: theme.textTheme.titleMedium),
@@ -103,9 +104,12 @@ class RemindersScreen extends StatelessWidget {
                                   onSelected: (days) => services.reminders
                                       .snooze(r.customer.id, days: days),
                                   itemBuilder: (_) => const [
-                                    PopupMenuItem(value: 1, child: Text('1 din baad')),
-                                    PopupMenuItem(value: 3, child: Text('3 din baad')),
-                                    PopupMenuItem(value: 7, child: Text('7 din baad')),
+                                    PopupMenuItem(
+                                        value: 1, child: Text('1 din baad')),
+                                    PopupMenuItem(
+                                        value: 3, child: Text('3 din baad')),
+                                    PopupMenuItem(
+                                        value: 7, child: Text('7 din baad')),
                                   ],
                                   child: Container(
                                     height: 48,

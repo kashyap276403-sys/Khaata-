@@ -69,7 +69,8 @@ class HomeScreen extends StatelessWidget {
                     color: Theme.of(context).colorScheme.errorContainer,
                     child: ListTile(
                       leading: const Icon(Icons.notifications_active_outlined),
-                      title: Text('$dueCount customer ki wapsi ki tareekh aa gayi'),
+                      title: Text(
+                          '$dueCount customer ki wapsi ki tareekh aa gayi'),
                       subtitle: const Text('Dekhne ke liye dabayein'),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () => Navigator.of(context).push(

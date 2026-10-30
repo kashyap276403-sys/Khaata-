@@ -94,9 +94,8 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
 
   Future<void> _pickDue() async {
     final now = DateTime.now();
-    final initial = _dueDate == null
-        ? now
-        : DateTime.fromMillisecondsSinceEpoch(_dueDate!);
+    final initial =
+        _dueDate == null ? now : DateTime.fromMillisecondsSinceEpoch(_dueDate!);
     final picked = await showDatePicker(
       context: context,
       initialDate: initial,
@@ -104,8 +103,8 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
       lastDate: DateTime(now.year + 5, 12, 31),
     );
     if (picked != null) {
-      setState(() => _dueDate =
-          DateTime(picked.year, picked.month, picked.day).millisecondsSinceEpoch);
+      setState(() => _dueDate = DateTime(picked.year, picked.month, picked.day)
+          .millisecondsSinceEpoch);
     }
   }
 

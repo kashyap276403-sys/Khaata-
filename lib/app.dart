@@ -50,7 +50,8 @@ class _AuraXAppState extends State<AuraXApp> {
 
 /// Makes [AppSettings] available to the Settings screen.
 class SettingsScope extends InheritedWidget {
-  const SettingsScope({super.key, required this.settings, required super.child});
+  const SettingsScope(
+      {super.key, required this.settings, required super.child});
 
   final AppSettings settings;
 
