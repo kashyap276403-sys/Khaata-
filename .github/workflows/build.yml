@@ -57,6 +57,7 @@ jobs:
       # (Pushes made with GITHUB_TOKEN do not trigger another run.)
       - name: Commit android folder and formatting
         if: github.event_name != 'pull_request'
+        continue-on-error: true
         run: |
           dart format lib test
           git config user.name "github-actions[bot]"
