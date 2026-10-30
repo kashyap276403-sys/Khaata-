@@ -4,6 +4,9 @@ import '../core/money.dart';
 import '../data/models.dart';
 import '../services.dart';
 import '../widgets/txn_tile.dart';
+import 'history_screen.dart';
+import 'quick_entry_screen.dart';
+import 'trash_screen.dart';
 
 /// Home dashboard. All numbers come from the SQLite ledger.
 class HomeScreen extends StatelessWidget {
@@ -13,6 +16,14 @@ class HomeScreen extends StatelessWidget {
     final summary = await s.ledger.dashboard();
     final recent = await s.ledger.recent(limit: 5);
     return (summary, recent);
+  }
+
+  void _quick(BuildContext context, TxnType type) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => QuickEntryScreen(initialType: type, showAppBar: true),
+      ),
+    );
   }
 
   @override
@@ -88,6 +99,46 @@ class HomeScreen extends StatelessWidget {
                       child: _StatCard(
                         label: 'Baaki wale',
                         value: '${summary.pendingCount}',
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: () => _quick(context, TxnType.udhaari),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Udhaari'),
+                ),
+                const SizedBox(height: 12),
+                FilledButton.tonalIcon(
+                  onPressed: () => _quick(context, TxnType.jama),
+                  icon: const Icon(Icons.remove),
+                  label: const Text('Jama'),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const HistoryScreen(),
+                          ),
+                        ),
+                        icon: const Icon(Icons.history),
+                        label: const Text('History'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const TrashScreen(),
+                          ),
+                        ),
+                        icon: const Icon(Icons.delete_outline),
+                        label: const Text('Trash'),
                       ),
                     ),
                   ],

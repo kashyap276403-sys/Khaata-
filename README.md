@@ -6,17 +6,20 @@ The app only **records** transactions. Cash / UPI / Other are labels; no payment
 
 ## Status (honest)
 
-Nothing below has been compiled or run yet: the code was written without a Flutter SDK.
-The first GitHub Actions run is the first real build and test run.
+The code is written without a local Flutter SDK, so every change is first built and tested
+by GitHub Actions. "Not yet built" means that phase has not had a green Actions run yet.
+Nothing has been tested on a real phone by the developer yet.
 
 | Area | State |
 |---|---|
-| Theme (emerald/ivory, light+dark), 5-tab navigation, Home dashboard | Written, untested |
-| SQLite schema v1 (customers, transactions, audit log) | Written, untested |
-| Customers: add, edit, archive, soft delete/restore, search, duplicate suggestions | Written, untested (no Trash screen yet) |
-| Ledger: integer paise, idempotency keys, atomic writes, reversal, integrity check | Written, tests written, not yet run |
-| Entry sheet (Udhaari/Jama, quick amounts, Cash/UPI/Other label) per customer | Written, untested |
-| Global Quick Entry tab, voice entry, History screen, Trash screen | Pending |
+| Theme (emerald/ivory, light+dark), 5-tab navigation, Home dashboard | Written; CI build was green for the earlier phases |
+| SQLite schema v2 (customers, transactions, audit log, tombstones) with v1 -> v2 migration | Written, migration test written |
+| Customers: add, edit, archive, search, duplicate suggestions | Written; CI green for phase 3 |
+| Ledger: integer paise, idempotency keys, atomic writes, reversal, integrity check | Written; CI green for phase 3 |
+| Quick Entry tab (type, customer search, recent customers, repeat last) | Written, not yet built |
+| History screen (entries with date filter/search/sort, activity log) | Written, not yet built |
+| Trash screen (30-day retention, restore, permanent delete with tombstones) | Written, not yet built |
+| Voice entry | Pending |
 | Reports, CSV/PDF, reminders, settings/customization | Pending |
 | Google Sign-In, Drive encrypted backup | Pending |
 | Signed release APK + GitHub Releases | Pending |

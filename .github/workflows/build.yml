@@ -45,33 +45,78 @@ jobs:
         run: dart format --output=none --set-exit-if-changed lib test
         continue-on-error: true
 
-      # Errors and warnings fail the build; style hints (infos) do not yet.
-      - run: flutter analyze --no-fatal-infos
-      - run: flutter test
+      # Errors and warnings fail the build; style hints (infos) do not.
+      # On failure the key lines are also written as annotations so they can
+      # be read without opening the raw log.
+      - name: Analyze
+        run: |
+          set +e
+          flutter analyze --no-fatal-infos > analyze.txt 2>&1
+          rc=$?
+          cat analyze.txt
+          if [ $rc -ne 0 ]; then
+            msg=$(grep -E "(error|warning) •" analyze.txt | head -15 | sed 's/%/%25/g' | tr '\n' '|')
+            echo "::error title=analyze failed::${msg}"
+          fi
+          exit $rc
+
+      - name: Test
+        run: |
+          set +e
+          flutter test > test.txt 2>&1
+          rc=$?
+          tail -80 test.txt
+          last=$(grep -vE '^\s*$' test.txt | tail -1 | sed 's/%/%25/g')
+          if [ $rc -ne 0 ]; then
+            msg=$(grep -vE '^\s*$' test.txt | tail -30 | sed 's/%/%25/g' | tr '\n' '|')
+            echo "::error title=tests failed::${msg}"
+          else
+            echo "::notice title=tests::${last}"
+          fi
+          exit $rc
 
       - name: Build debug APK
-        run: flutter build apk --debug
-
-      # After a green build: apply dart format and commit the generated
-      # android/ folder once, so the applicationId stays fixed in the repo.
-      # (Pushes made with GITHUB_TOKEN do not trigger another run.)
-      - name: Commit android folder and formatting
-        if: github.event_name != 'pull_request'
-        continue-on-error: true
         run: |
-          dart format lib test
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add android lib test
-          if git diff --cached --quiet; then
-            echo "Nothing to commit"
-          else
-            git commit -m "chore: add generated android folder and dart format"
-            git pull --rebase origin "${GITHUB_REF_NAME}"
-            git push origin "HEAD:${GITHUB_REF_NAME}"
+          set +e
+          flutter build apk --debug > build.txt 2>&1
+          rc=$?
+          tail -40 build.txt
+          if [ $rc -ne 0 ]; then
+            msg=$(grep -vE '^\s*$' build.txt | tail -25 | sed 's/%/%25/g' | tr '\n' '|')
+            echo "::error title=build failed::${msg}"
           fi
+          exit $rc
 
       - uses: actions/upload-artifact@v4
         with:
           name: khaata-debug-apk
           path: build/app/outputs/flutter-apk/app-debug.apk
+
+      # After the APK is safely uploaded: apply dart format and commit the
+      # generated android/ folder once, so the applicationId stays fixed in
+      # the repo. Any failure is reported as a warning annotation only.
+      - name: Commit android folder and formatting
+        if: github.event_name != 'pull_request'
+        continue-on-error: true
+        run: |
+          commit_back() {
+            dart format lib test &&
+            git config user.name "github-actions[bot]" &&
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com" &&
+            git add android lib test &&
+            if git diff --cached --quiet; then
+              echo "Nothing to commit"
+            else
+              git commit -m "chore: add generated android folder and dart format" &&
+              git pull --rebase origin "${GITHUB_REF_NAME}" &&
+              git push origin "HEAD:${GITHUB_REF_NAME}"
+            fi
+          }
+          out=$(commit_back 2>&1)
+          rc=$?
+          echo "$out"
+          if [ $rc -ne 0 ]; then
+            msg=$(echo "$out" | tail -8 | sed 's/%/%25/g' | tr '\n' '|')
+            echo "::warning title=auto-commit failed (rc=${rc})::${msg}"
+            exit $rc
+          fi

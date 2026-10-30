@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
@@ -7,10 +8,15 @@ import 'package:sqflite/sqflite.dart';
 ///   balance(customer) = SUM(udhaari paise) - SUM(jama paise)
 ///   over rows where deleted_at IS NULL (reversals are normal rows of the
 ///   opposite type). No balance is stored anywhere else.
+///
+/// Schema versions:
+///   1: customers, transactions, audit_log
+///   2: tombstones (permanent-deletion markers, used later so old backups
+///      cannot silently resurrect deleted records)
 class AppDatabase {
   AppDatabase._();
 
-  static const int schemaVersion = 1;
+  static const int schemaVersion = 2;
 
   static Future<Database> open({String? path, DatabaseFactory? factory}) async {
     final f = factory ?? databaseFactory;
@@ -32,6 +38,19 @@ class AppDatabase {
   }
 
   static Future<void> _onCreate(Database db, int version) async {
+    await createV1(db);
+    await _migrateToV2(db);
+  }
+
+  static Future<void> _onUpgrade(Database db, int oldV, int newV) async {
+    // One block per schema version. Never drop or rewrite user data here.
+    if (oldV < 2) await _migrateToV2(db);
+  }
+
+  /// The original version-1 schema. Kept so migration tests can build a
+  /// real v1 database and upgrade it.
+  @visibleForTesting
+  static Future<void> createV1(Database db) async {
     await db.execute('''
 CREATE TABLE customers(
   id TEXT PRIMARY KEY,
@@ -84,8 +103,13 @@ CREATE TABLE audit_log(
         'CREATE INDEX idx_audit_entity ON audit_log(entity, entity_id)');
   }
 
-  static Future<void> _onUpgrade(Database db, int oldV, int newV) async {
-    // Migrations go here, one `if (oldV < N)` block per schema version.
-    // Never drop or rewrite user data in a migration.
+  static Future<void> _migrateToV2(Database db) async {
+    await db.execute('''
+CREATE TABLE IF NOT EXISTS tombstones(
+  entity TEXT NOT NULL,
+  entity_id TEXT NOT NULL,
+  purged_at INTEGER NOT NULL,
+  PRIMARY KEY(entity, entity_id)
+)''');
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/money.dart';
+import '../data/customer_repository.dart' show trashRetentionDays;
 import '../data/models.dart';
 import '../services.dart';
 import '../widgets/entry_sheet.dart';
@@ -68,8 +69,8 @@ class CustomerDetailScreen extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         title: const Text('Customer delete karein?'),
         content: Text(
-          '${c.name} aur uska hisaab list se hat jayega. '
-          'Trash se wapas lane ka feature agle phase me aayega.',
+          '${c.name} aur uska poora hisaab Trash me chala jayega. '
+          '$trashRetentionDays din tak wahan se wapas la sakte hain.',
         ),
         actions: [
           TextButton(

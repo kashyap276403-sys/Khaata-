@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'customers_screen.dart';
 import 'home_screen.dart';
+import 'quick_entry_screen.dart';
+import 'settings_screen.dart';
 import 'placeholder_screen.dart';
 
 class AppShell extends StatefulWidget {
@@ -17,21 +19,13 @@ class _AppShellState extends State<AppShell> {
   static const List<Widget> _pages = [
     HomeScreen(),
     CustomersScreen(),
-    PlaceholderScreen(
-      title: 'Quick Entry',
-      message: 'Udhaari / Jama ki quick entry agle phase me aayegi.',
-      icon: Icons.bolt,
-    ),
+    QuickEntryScreen(),
     PlaceholderScreen(
       title: 'Reports',
       message: 'Daily, weekly aur monthly reports baad ke phase me aayengi.',
       icon: Icons.bar_chart,
     ),
-    PlaceholderScreen(
-      title: 'Settings',
-      message: 'Language, theme aur backup settings baad ke phase me aayengi.',
-      icon: Icons.settings,
-    ),
+    SettingsScreen(),
   ];
 
   @override

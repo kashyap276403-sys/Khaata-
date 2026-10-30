@@ -34,3 +34,9 @@ String formatDateTime(int epochMillis) {
   String two(int n) => n.toString().padLeft(2, '0');
   return '${two(d.day)}/${two(d.month)}/${d.year} ${two(d.hour)}:${two(d.minute)}';
 }
+
+/// Escapes %, _ and \ so user text can be used inside SQL LIKE ... ESCAPE '\'.
+String escapeLike(String s) => s
+    .replaceAll('\\', '\\\\')
+    .replaceAll('%', '\\%')
+    .replaceAll('_', '\\_');

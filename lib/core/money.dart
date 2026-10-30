@@ -43,3 +43,10 @@ int? parseRupeesToPaise(String input) {
   final paise = frac == null ? 0 : int.parse(frac.padRight(2, '0'));
   return rupees * 100 + paise;
 }
+
+/// Paise back to plain editable text: 5050 -> "50.50", 5000 -> "50".
+String paiseToInput(int paise) {
+  final rupees = paise ~/ 100;
+  final rem = paise % 100;
+  return rem == 0 ? '$rupees' : '$rupees.${rem.toString().padLeft(2, '0')}';
+}

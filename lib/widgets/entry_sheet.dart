@@ -13,6 +13,8 @@ Future<void> showEntrySheet(
   required String customerId,
   required String customerName,
   required TxnType type,
+  int? initialAmountPaise,
+  PayMethod initialMethod = PayMethod.cash,
 }) {
   return showModalBottomSheet<void>(
     context: context,
@@ -24,6 +26,8 @@ Future<void> showEntrySheet(
         customerId: customerId,
         customerName: customerName,
         type: type,
+        initialAmountPaise: initialAmountPaise,
+        initialMethod: initialMethod,
       ),
     ),
   );
@@ -34,11 +38,15 @@ class _EntrySheet extends StatefulWidget {
     required this.customerId,
     required this.customerName,
     required this.type,
+    this.initialAmountPaise,
+    this.initialMethod = PayMethod.cash,
   });
 
   final String customerId;
   final String customerName;
   final TxnType type;
+  final int? initialAmountPaise;
+  final PayMethod initialMethod;
 
   @override
   State<_EntrySheet> createState() => _EntrySheetState();
@@ -47,12 +55,20 @@ class _EntrySheet extends StatefulWidget {
 class _EntrySheetState extends State<_EntrySheet> {
   static const List<int> _quickRupees = [50, 100, 200, 500, 1000];
 
-  final TextEditingController _amount = TextEditingController();
+  late final TextEditingController _amount;
   // One key per opened sheet: a double tap or retry cannot create two entries.
   final String _key = const Uuid().v4();
-  PayMethod _method = PayMethod.cash;
+  late PayMethod _method;
   bool _saving = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _method = widget.initialMethod;
+    final init = widget.initialAmountPaise;
+    _amount = TextEditingController(text: init == null ? '' : paiseToInput(init));
+  }
 
   @override
   void dispose() {

@@ -2,6 +2,8 @@ import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 
 import '../core/money.dart';
+import '../core/text_utils.dart';
+import 'activity.dart';
 import 'audit.dart';
 import 'change_bus.dart';
 import 'models.dart';
@@ -49,7 +51,7 @@ class LedgerRepository {
         }
       }
       final c = await txn.query('customers',
-          columns: ['id'],
+          columns: ['id', 'name'],
           where: 'id = ? AND deleted_at IS NULL',
           whereArgs: [customerId],
           limit: 1);
@@ -72,6 +74,7 @@ class LedgerRepository {
           action: 'create',
           details: {
             'customer_id': customerId,
+            'customer_name': c.first['name'],
             'type': type.name,
             'amount_paise': amountPaise,
             'method': method.name,
@@ -118,6 +121,11 @@ class LedgerRepository {
       if (already.isNotEmpty) {
         throw LedgerException('Yeh entry pehle hi reverse ho chuki hai');
       }
+      final cust = await txn.query('customers',
+          columns: ['name'],
+          where: 'id = ?',
+          whereArgs: [orig.customerId],
+          limit: 1);
 
       final t = LedgerTxn(
         id: _uuid.v4(),
@@ -137,6 +145,7 @@ class LedgerRepository {
           action: 'reverse',
           details: {
             'reverses_id': orig.id,
+            'customer_name': cust.isEmpty ? null : cust.first['name'],
             'type': t.type.name,
             'amount_paise': t.amountPaise,
           },
@@ -167,16 +176,64 @@ class LedgerRepository {
     return rows.map(LedgerTxn.fromMap).toList();
   }
 
-  Future<List<RecentTxn>> recent({int limit = 5}) async {
+  Future<List<RecentTxn>> recent({int limit = 5}) =>
+      history(limit: limit, newestFirst: true);
+
+  /// The latest ordinary entry (reversals are skipped), for "repeat last".
+  Future<RecentTxn?> lastEntry() async {
     final rows = await _db.rawQuery('''
 SELECT t.*, c.name AS customer_name
 FROM transactions t JOIN customers c ON c.id = t.customer_id
 WHERE t.deleted_at IS NULL AND c.deleted_at IS NULL
+  AND c.archived = 0 AND t.reverses_id IS NULL
 ORDER BY t.created_at DESC, t.rowid DESC
-LIMIT ?''', [limit]);
+LIMIT 1''');
+    if (rows.isEmpty) return null;
+    final r = rows.first;
+    return RecentTxn(LedgerTxn.fromMap(r), r['customer_name'] as String);
+  }
+
+  /// Global history with optional date window [fromMs, toMs) in epoch
+  /// millis, customer-name search and sort order.
+  Future<List<RecentTxn>> history({
+    int? fromMs,
+    int? toMs,
+    String query = '',
+    bool newestFirst = true,
+    int limit = 500,
+  }) async {
+    final where = <String>['t.deleted_at IS NULL', 'c.deleted_at IS NULL'];
+    final args = <Object?>[];
+    if (fromMs != null) {
+      where.add('t.created_at >= ?');
+      args.add(fromMs);
+    }
+    if (toMs != null) {
+      where.add('t.created_at < ?');
+      args.add(toMs);
+    }
+    final q = normalizeName(query);
+    if (q.isNotEmpty) {
+      where.add("c.name_normalized LIKE ? ESCAPE '\\'");
+      args.add('%${escapeLike(q)}%');
+    }
+    final dir = newestFirst ? 'DESC' : 'ASC';
+    final rows = await _db.rawQuery('''
+SELECT t.*, c.name AS customer_name
+FROM transactions t JOIN customers c ON c.id = t.customer_id
+WHERE ${where.join(' AND ')}
+ORDER BY t.created_at $dir, t.rowid $dir
+LIMIT ?''', [...args, limit]);
     return rows
         .map((r) => RecentTxn(LedgerTxn.fromMap(r), r['customer_name'] as String))
         .toList();
+  }
+
+  /// Audit trail, newest first.
+  Future<List<ActivityItem>> activity({int limit = 200}) async {
+    final rows = await _db.query('audit_log',
+        orderBy: 'at DESC, rowid DESC', limit: limit);
+    return rows.map(ActivityItem.fromMap).toList();
   }
 
   Future<DashboardSummary> dashboard({DateTime? now}) async {

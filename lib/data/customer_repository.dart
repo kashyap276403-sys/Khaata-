@@ -6,6 +6,9 @@ import 'audit.dart';
 import 'change_bus.dart';
 import 'models.dart';
 
+/// Deleted customers stay in Trash this many days, then are removed for good.
+const int trashRetentionDays = 30;
+
 class CustomerRepository {
   CustomerRepository(this._db, this._bus);
 
@@ -36,6 +39,12 @@ LEFT JOIN (
     return d;
   }
 
+  Future<String?> _nameOf(DatabaseExecutor ex, String id) async {
+    final rows = await ex.query('customers',
+        columns: ['name'], where: 'id = ?', whereArgs: [id], limit: 1);
+    return rows.isEmpty ? null : rows.first['name'] as String;
+  }
+
   /// Possible duplicates for the form to show. NEVER merges automatically;
   /// the user always decides.
   Future<List<Customer>> findPossibleMatches({
@@ -60,7 +69,9 @@ LEFT JOIN (
       final d = normalizePhone(raw ?? '');
       if (d.length >= 7) {
         conds.add('(phone = ? OR phone2 = ?)');
-        args..add(d)..add(d);
+        args
+          ..add(d)
+          ..add(d);
       }
     }
     if (conds.isEmpty) return [];
@@ -186,7 +197,7 @@ LEFT JOIN (
           entity: 'customer',
           entityId: id,
           action: 'update',
-          details: changes,
+          details: {'name': cleanName, 'changes': changes},
           at: ts);
     });
     _bus.notifyChanged();
@@ -206,13 +217,14 @@ LEFT JOIN (
           entity: 'customer',
           entityId: id,
           action: archived ? 'archive' : 'unarchive',
+          details: {'name': await _nameOf(txn, id)},
           at: ts);
     });
     _bus.notifyChanged();
   }
 
-  /// Soft delete: the row and its transactions stay in the database
-  /// (Trash with 30-day retention arrives in a later phase).
+  /// Soft delete: the row and ALL its transactions stay in the database and
+  /// can be restored from Trash for [trashRetentionDays] days.
   Future<void> softDelete(String id, {DateTime? now}) async {
     final ts = (now ?? DateTime.now()).millisecondsSinceEpoch;
     await _db.transaction((txn) async {
@@ -224,7 +236,11 @@ LEFT JOIN (
       );
       if (n == 0) throw LedgerException('Customer nahi mila');
       await writeAudit(txn,
-          entity: 'customer', entityId: id, action: 'delete', at: ts);
+          entity: 'customer',
+          entityId: id,
+          action: 'delete',
+          details: {'name': await _nameOf(txn, id)},
+          at: ts);
     });
     _bus.notifyChanged();
   }
@@ -238,11 +254,74 @@ LEFT JOIN (
         where: 'id = ? AND deleted_at IS NOT NULL',
         whereArgs: [id],
       );
-      if (n == 0) throw LedgerException('Yeh customer deleted nahi hai');
+      if (n == 0) throw LedgerException('Yeh customer Trash me nahi hai');
       await writeAudit(txn,
-          entity: 'customer', entityId: id, action: 'restore', at: ts);
+          entity: 'customer',
+          entityId: id,
+          action: 'restore',
+          details: {'name': await _nameOf(txn, id)},
+          at: ts);
     });
     _bus.notifyChanged();
+  }
+
+  /// Permanently removes a customer that is in Trash, with all its
+  /// transactions. Personal details are scrubbed from the audit log and a
+  /// tombstone is written, so an old backup can never silently bring the
+  /// records back.
+  Future<void> purge(String id, {DateTime? now}) async {
+    final ts = (now ?? DateTime.now()).millisecondsSinceEpoch;
+    await _db.transaction((txn) async {
+      final rows = await txn.query('customers',
+          columns: ['id'],
+          where: 'id = ? AND deleted_at IS NOT NULL',
+          whereArgs: [id],
+          limit: 1);
+      if (rows.isEmpty) {
+        throw LedgerException(
+            'Sirf Trash ke customer hamesha ke liye delete ho sakte hain');
+      }
+      final txnRows = await txn.query('transactions',
+          columns: ['id'], where: 'customer_id = ?', whereArgs: [id]);
+      final txnIds = txnRows.map((r) => r['id'] as String).toList();
+
+      for (final eid in [id, ...txnIds]) {
+        await txn.update('audit_log', {'details': null},
+            where: 'entity_id = ?', whereArgs: [eid]);
+      }
+      // Reversal rows point at their originals, so they go first.
+      await txn.delete('transactions',
+          where: 'customer_id = ? AND reverses_id IS NOT NULL',
+          whereArgs: [id]);
+      await txn.delete('transactions',
+          where: 'customer_id = ?', whereArgs: [id]);
+      await txn.delete('customers', where: 'id = ?', whereArgs: [id]);
+
+      await txn.insert('tombstones',
+          {'entity': 'customer', 'entity_id': id, 'purged_at': ts});
+      for (final tid in txnIds) {
+        await txn.insert('tombstones',
+            {'entity': 'transaction', 'entity_id': tid, 'purged_at': ts});
+      }
+      await writeAudit(txn,
+          entity: 'customer', entityId: id, action: 'purge', at: ts);
+    });
+    _bus.notifyChanged();
+  }
+
+  /// Removes Trash items older than [trashRetentionDays]. Returns how many.
+  Future<int> purgeExpired({DateTime? now}) async {
+    final n = now ?? DateTime.now();
+    final cutoff =
+        n.subtract(const Duration(days: trashRetentionDays)).millisecondsSinceEpoch;
+    final rows = await _db.query('customers',
+        columns: ['id'],
+        where: 'deleted_at IS NOT NULL AND deleted_at < ?',
+        whereArgs: [cutoff]);
+    for (final r in rows) {
+      await purge(r['id'] as String, now: n);
+    }
+    return rows.length;
   }
 
   Future<Customer?> getById(String id) async {
@@ -259,11 +338,6 @@ FROM transactions WHERE customer_id = ? AND deleted_at IS NULL''',
     return rows.first['bal'] as int;
   }
 
-  String _escapeLike(String s) => s
-      .replaceAll('\\', '\\\\')
-      .replaceAll('%', '\\%')
-      .replaceAll('_', '\\_');
-
   /// Active customers (or archived ones when [archived] is true) with their
   /// balance. [query] matches name, phone or customer ID/code.
   Future<List<CustomerWithBalance>> list({
@@ -274,9 +348,9 @@ FROM transactions WHERE customer_id = ? AND deleted_at IS NULL''',
     var where = 'c.deleted_at IS NULL AND c.archived = ?';
     final q = query.trim();
     if (q.isNotEmpty) {
-      final like = '%${_escapeLike(normalizeName(q))}%';
+      final like = '%${escapeLike(normalizeName(q))}%';
       final digits = normalizePhone(q);
-      final phoneLike = '%${_escapeLike(digits.isEmpty ? q : digits)}%';
+      final phoneLike = '%${escapeLike(digits.isEmpty ? q : digits)}%';
       where += ''' AND (c.name_normalized LIKE ? ESCAPE '\\'
         OR c.phone LIKE ? ESCAPE '\\' OR c.phone2 LIKE ? ESCAPE '\\'
         OR LOWER('C' || SUBSTR('0000' || c.seq, -4, 4)) LIKE ? ESCAPE '\\'
@@ -288,6 +362,36 @@ SELECT c.*, COALESCE(b.bal, 0) AS balance
 FROM customers c $_balanceJoin
 WHERE $where
 ORDER BY c.name_normalized, c.seq''', args);
+    return rows
+        .map((r) => CustomerWithBalance(Customer.fromMap(r), r['balance'] as int))
+        .toList();
+  }
+
+  /// Active customers ordered by their most recent entry (for Quick Entry).
+  Future<List<CustomerWithBalance>> recentCustomers({int limit = 6}) async {
+    final rows = await _db.rawQuery('''
+SELECT c.*, COALESCE(b.bal, 0) AS balance, m.last_at AS last_at
+FROM customers c
+JOIN (
+  SELECT customer_id, MAX(created_at) AS last_at
+  FROM transactions WHERE deleted_at IS NULL GROUP BY customer_id
+) m ON m.customer_id = c.id
+$_balanceJoin
+WHERE c.deleted_at IS NULL AND c.archived = 0
+ORDER BY m.last_at DESC, c.seq DESC
+LIMIT ?''', [limit]);
+    return rows
+        .map((r) => CustomerWithBalance(Customer.fromMap(r), r['balance'] as int))
+        .toList();
+  }
+
+  /// Customers currently in Trash, most recently deleted first.
+  Future<List<CustomerWithBalance>> listDeleted() async {
+    final rows = await _db.rawQuery('''
+SELECT c.*, COALESCE(b.bal, 0) AS balance
+FROM customers c $_balanceJoin
+WHERE c.deleted_at IS NOT NULL
+ORDER BY c.deleted_at DESC''');
     return rows
         .map((r) => CustomerWithBalance(Customer.fromMap(r), r['balance'] as int))
         .toList();
