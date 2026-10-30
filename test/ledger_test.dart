@@ -202,10 +202,7 @@ void main() {
           amountPaise: 20000,
           now: today);
       await ledger.addTransaction(
-          customerId: b.id,
-          type: TxnType.jama,
-          amountPaise: 20000,
-          now: today);
+          customerId: b.id, type: TxnType.jama, amountPaise: 20000, now: today);
 
       final s = await ledger.dashboard(now: DateTime(2026, 10, 30, 15));
       expect(s.outstandingPaise, 150000);

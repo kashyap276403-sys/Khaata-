@@ -100,8 +100,7 @@ void main() {
           customerId: c.id, type: TxnType.jama, amountPaise: 100);
 
       // A customer must be in Trash first.
-      await expectLater(
-          customers.purge(c.id), throwsA(isA<LedgerException>()));
+      await expectLater(customers.purge(c.id), throwsA(isA<LedgerException>()));
 
       await customers.softDelete(c.id);
       await customers.purge(c.id);
@@ -125,8 +124,7 @@ void main() {
       final c = await customers.add(name: 'Ramesh');
       await customers.softDelete(c.id);
       await customers.purge(c.id);
-      await expectLater(
-          customers.purge(c.id), throwsA(isA<LedgerException>()));
+      await expectLater(customers.purge(c.id), throwsA(isA<LedgerException>()));
     });
 
     test('purgeExpired only removes items older than retention', () async {

@@ -21,7 +21,8 @@ Future<void> showEntrySheet(
     isScrollControlled: true,
     showDragHandle: true,
     builder: (sheetContext) => Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(sheetContext).viewInsets.bottom),
+      padding: EdgeInsets.only(
+          bottom: MediaQuery.of(sheetContext).viewInsets.bottom),
       child: _EntrySheet(
         customerId: customerId,
         customerName: customerName,
@@ -67,7 +68,8 @@ class _EntrySheetState extends State<_EntrySheet> {
     super.initState();
     _method = widget.initialMethod;
     final init = widget.initialAmountPaise;
-    _amount = TextEditingController(text: init == null ? '' : paiseToInput(init));
+    _amount =
+        TextEditingController(text: init == null ? '' : paiseToInput(init));
   }
 
   @override
@@ -165,7 +167,8 @@ class _EntrySheetState extends State<_EntrySheet> {
             ],
           ),
           const SizedBox(height: 16),
-          Text('Kaise (sirf record ke liye)', style: theme.textTheme.bodyMedium),
+          Text('Kaise (sirf record ke liye)',
+              style: theme.textTheme.bodyMedium),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,

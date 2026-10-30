@@ -225,7 +225,8 @@ WHERE ${where.join(' AND ')}
 ORDER BY t.created_at $dir, t.rowid $dir
 LIMIT ?''', [...args, limit]);
     return rows
-        .map((r) => RecentTxn(LedgerTxn.fromMap(r), r['customer_name'] as String))
+        .map((r) =>
+            RecentTxn(LedgerTxn.fromMap(r), r['customer_name'] as String))
         .toList();
   }
 
@@ -249,7 +250,8 @@ SELECT
   COALESCE(SUM(CASE WHEN t.type = 'jama' AND t.created_at >= ? AND t.created_at < ?
                     THEN t.amount_paise ELSE 0 END), 0) AS today_jama
 FROM transactions t JOIN customers c ON c.id = t.customer_id
-WHERE t.deleted_at IS NULL AND c.deleted_at IS NULL''', [start, end, start, end]);
+WHERE t.deleted_at IS NULL AND c.deleted_at IS NULL''',
+        [start, end, start, end]);
 
     final count = await _db.rawQuery(
         'SELECT COUNT(*) AS n FROM customers WHERE deleted_at IS NULL');

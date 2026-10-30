@@ -46,7 +46,10 @@ class _EntriesTabState extends State<_EntriesTab> {
     final tomorrow = DateTime(n.year, n.month, n.day + 1);
     switch (_range) {
       case _Range.today:
-        return (startToday.millisecondsSinceEpoch, tomorrow.millisecondsSinceEpoch);
+        return (
+          startToday.millisecondsSinceEpoch,
+          tomorrow.millisecondsSinceEpoch
+        );
       case _Range.week:
         return (
           DateTime(n.year, n.month, n.day - 6).millisecondsSinceEpoch,
@@ -132,7 +135,8 @@ class _EntriesTabState extends State<_EntriesTab> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (data.isEmpty) {
-                  return const Center(child: Text('Is filter me koi entry nahi.'));
+                  return const Center(
+                      child: Text('Is filter me koi entry nahi.'));
                 }
                 return ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16),

@@ -26,7 +26,8 @@ class AppServices {
 }
 
 class ServicesScope extends InheritedWidget {
-  const ServicesScope({super.key, required this.services, required super.child});
+  const ServicesScope(
+      {super.key, required this.services, required super.child});
 
   final AppServices services;
 

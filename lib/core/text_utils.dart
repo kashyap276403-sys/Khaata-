@@ -36,7 +36,5 @@ String formatDateTime(int epochMillis) {
 }
 
 /// Escapes %, _ and \ so user text can be used inside SQL LIKE ... ESCAPE '\'.
-String escapeLike(String s) => s
-    .replaceAll('\\', '\\\\')
-    .replaceAll('%', '\\%')
-    .replaceAll('_', '\\_');
+String escapeLike(String s) =>
+    s.replaceAll('\\', '\\\\').replaceAll('%', '\\%').replaceAll('_', '\\_');

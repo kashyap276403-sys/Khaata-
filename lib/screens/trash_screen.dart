@@ -118,7 +118,8 @@ class TrashScreen extends StatelessWidget {
                                   style: FilledButton.styleFrom(
                                     minimumSize: const Size(0, 48),
                                   ),
-                                  onPressed: () => _restore(context, item.customer),
+                                  onPressed: () =>
+                                      _restore(context, item.customer),
                                   child: const Text('Wapas laayein'),
                                 ),
                               ),
@@ -129,7 +130,8 @@ class TrashScreen extends StatelessWidget {
                                     minimumSize: const Size(0, 48),
                                     foregroundColor: theme.colorScheme.error,
                                   ),
-                                  onPressed: () => _purge(context, item.customer),
+                                  onPressed: () =>
+                                      _purge(context, item.customer),
                                   child: const Text('Hamesha delete'),
                                 ),
                               ),

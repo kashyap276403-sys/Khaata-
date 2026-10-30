@@ -129,7 +129,10 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
       }
       navigator.pop();
       messenger.showSnackBar(
-        SnackBar(content: Text(existing == null ? 'Customer add ho gaya' : 'Customer update ho gaya')),
+        SnackBar(
+            content: Text(existing == null
+                ? 'Customer add ho gaya'
+                : 'Customer update ho gaya')),
       );
     } on ArgumentError catch (e) {
       if (!mounted) return;

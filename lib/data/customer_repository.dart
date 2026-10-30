@@ -293,8 +293,8 @@ LEFT JOIN (
       await txn.delete('transactions',
           where: 'customer_id = ? AND reverses_id IS NOT NULL',
           whereArgs: [id]);
-      await txn.delete('transactions',
-          where: 'customer_id = ?', whereArgs: [id]);
+      await txn
+          .delete('transactions', where: 'customer_id = ?', whereArgs: [id]);
       await txn.delete('customers', where: 'id = ?', whereArgs: [id]);
 
       await txn.insert('tombstones',
@@ -312,8 +312,9 @@ LEFT JOIN (
   /// Removes Trash items older than [trashRetentionDays]. Returns how many.
   Future<int> purgeExpired({DateTime? now}) async {
     final n = now ?? DateTime.now();
-    final cutoff =
-        n.subtract(const Duration(days: trashRetentionDays)).millisecondsSinceEpoch;
+    final cutoff = n
+        .subtract(const Duration(days: trashRetentionDays))
+        .millisecondsSinceEpoch;
     final rows = await _db.query('customers',
         columns: ['id'],
         where: 'deleted_at IS NOT NULL AND deleted_at < ?',
@@ -363,7 +364,8 @@ FROM customers c $_balanceJoin
 WHERE $where
 ORDER BY c.name_normalized, c.seq''', args);
     return rows
-        .map((r) => CustomerWithBalance(Customer.fromMap(r), r['balance'] as int))
+        .map((r) =>
+            CustomerWithBalance(Customer.fromMap(r), r['balance'] as int))
         .toList();
   }
 
@@ -381,7 +383,8 @@ WHERE c.deleted_at IS NULL AND c.archived = 0
 ORDER BY m.last_at DESC, c.seq DESC
 LIMIT ?''', [limit]);
     return rows
-        .map((r) => CustomerWithBalance(Customer.fromMap(r), r['balance'] as int))
+        .map((r) =>
+            CustomerWithBalance(Customer.fromMap(r), r['balance'] as int))
         .toList();
   }
 
@@ -393,7 +396,8 @@ FROM customers c $_balanceJoin
 WHERE c.deleted_at IS NOT NULL
 ORDER BY c.deleted_at DESC''');
     return rows
-        .map((r) => CustomerWithBalance(Customer.fromMap(r), r['balance'] as int))
+        .map((r) =>
+            CustomerWithBalance(Customer.fromMap(r), r['balance'] as int))
         .toList();
   }
 }

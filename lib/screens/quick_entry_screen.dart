@@ -47,7 +47,8 @@ class _QuickEntryScreenState extends State<QuickEntryScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: widget.showAppBar ? AppBar(title: const Text('Quick Entry')) : null,
+      appBar:
+          widget.showAppBar ? AppBar(title: const Text('Quick Entry')) : null,
       body: ListenableBuilder(
         listenable: services.bus,
         builder: (context, _) => FutureBuilder<_QuickData>(
@@ -144,8 +145,8 @@ class _QuickEntryScreenState extends State<QuickEntryScreen> {
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: CircleAvatar(
-                        child: Text(item.customer.name.characters.first
-                            .toUpperCase()),
+                        child: Text(
+                            item.customer.name.characters.first.toUpperCase()),
                       ),
                       title: Text(item.customer.name),
                       subtitle: Text(item.customer.code),
