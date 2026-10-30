@@ -15,4 +15,29 @@ void main() {
     });
     test('negative', () => expect(formatPaise(-25000), '-₹250'));
   });
+
+  group('parseRupeesToPaise', () {
+    test('whole and decimal amounts', () {
+      expect(parseRupeesToPaise('50'), 5000);
+      expect(parseRupeesToPaise('50.5'), 5050);
+      expect(parseRupeesToPaise('50.50'), 5050);
+      expect(parseRupeesToPaise('0.05'), 5);
+      expect(parseRupeesToPaise('0.5'), 50);
+    });
+    test('commas, rupee sign and spaces are ignored', () {
+      expect(parseRupeesToPaise(' ₹1,000 '), 100000);
+      expect(parseRupeesToPaise('12,34,567.89'), 123456789);
+    });
+    test('invalid input returns null', () {
+      expect(parseRupeesToPaise(''), isNull);
+      expect(parseRupeesToPaise('abc'), isNull);
+      expect(parseRupeesToPaise('-5'), isNull);
+      expect(parseRupeesToPaise('50.555'), isNull);
+      expect(parseRupeesToPaise('50.'), isNull);
+      expect(parseRupeesToPaise('1e5'), isNull);
+    });
+    test('round trip with formatPaise', () {
+      expect(formatPaise(parseRupeesToPaise('1234.56')!), '₹1,234.56');
+    });
+  });
 }

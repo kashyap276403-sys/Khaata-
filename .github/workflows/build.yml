@@ -21,12 +21,18 @@ jobs:
           channel: stable
           cache: true
 
-      # Generate the Android platform folder on the first run only.
+      # SQLite library needed by the desktop-side database tests.
+      - name: Install SQLite
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+
+      # Generate the Android platform folder on the first run only, in a
+      # temp dir, and copy just android/ so our own files are never touched.
       # applicationId becomes com.aurax.khaata (must never change later).
       - name: Create Android project if missing
         run: |
           if [ ! -d android ]; then
-            flutter create --org com.aurax --project-name khaata --platforms android .
+            flutter create --org com.aurax --project-name khaata --platforms android "$RUNNER_TEMP/khaata_gen"
+            cp -r "$RUNNER_TEMP/khaata_gen/android" ./android
           fi
 
       - run: flutter pub get
@@ -36,7 +42,8 @@ jobs:
         run: dart format --output=none --set-exit-if-changed lib test
         continue-on-error: true
 
-      - run: flutter analyze
+      # Errors and warnings fail the build; style hints (infos) do not yet.
+      - run: flutter analyze --no-fatal-infos
       - run: flutter test
 
       - name: Build debug APK

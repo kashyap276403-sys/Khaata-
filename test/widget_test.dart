@@ -1,15 +1,37 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:khaata/app.dart';
+import 'package:khaata/data/app_database.dart';
+import 'package:khaata/services.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {
-  testWidgets('shows home and navigates between tabs', (tester) async {
-    await tester.pumpWidget(const AuraXApp());
+  sqfliteFfiInit();
+
+  testWidgets('shows home and navigates to customers', (tester) async {
+    final db = await tester.runAsync(
+      () => AppDatabase.open(
+        path: inMemoryDatabasePath,
+        factory: databaseFactoryFfi,
+      ),
+    );
+    final services = AppServices.fromDatabase(db!);
+
+    await tester.pumpWidget(AuraXApp(services: services));
+    await tester.pump();
 
     expect(find.text('auraX Khaata'), findsWidgets);
-    expect(find.text('Total baaki (Outstanding)'), findsOneWidget);
+    expect(find.text('Quick Entry'), findsWidgets);
 
     await tester.tap(find.text('Customers').last);
-    await tester.pumpAndSettle();
-    expect(find.text('Abhi koi customer nahi'), findsOneWidget);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Naam, phone ya ID se khojein'), findsOneWidget);
+
+    // Let in-flight queries finish before closing the database.
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 200)),
+    );
+    await tester.pump();
+    await tester.runAsync(() => db.close());
   });
 }
