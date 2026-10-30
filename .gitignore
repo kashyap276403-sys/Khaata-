@@ -1,0 +1,30 @@
+# Flutter / Dart
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+.pub-cache/
+.pub/
+*.iml
+.idea/
+.vscode/
+
+# Android
+android/.gradle/
+android/local.properties
+android/gradle-wrapper.jar
+android/app/debug/
+android/app/profile/
+android/app/release/
+**/*.class
+
+# SIGNING SECRETS - NEVER COMMIT
+*.jks
+*.keystore
+key.properties
+android/key.properties
+
+# Misc
+.DS_Store
+*.log
