@@ -4,11 +4,12 @@ import 'package:sqflite/sqflite.dart';
 import 'data/change_bus.dart';
 import 'data/customer_repository.dart';
 import 'data/ledger_repository.dart';
+import 'data/reminder_repository.dart';
 import 'data/report_repository.dart';
 
 /// Everything the UI needs from the data layer.
 class AppServices {
-  AppServices._(this.db, this.bus, this.customers, this.ledger, this.reports);
+  AppServices._(this.db, this.bus, this.customers, this.ledger, this.reports, this.reminders);
 
   factory AppServices.fromDatabase(Database db) {
     final bus = ChangeBus();
@@ -18,6 +19,7 @@ class AppServices {
       CustomerRepository(db, bus),
       LedgerRepository(db, bus),
       ReportRepository(db),
+      ReminderRepository(db, bus),
     );
   }
 
@@ -26,6 +28,7 @@ class AppServices {
   final CustomerRepository customers;
   final LedgerRepository ledger;
   final ReportRepository reports;
+  final ReminderRepository reminders;
 }
 
 class ServicesScope extends InheritedWidget {

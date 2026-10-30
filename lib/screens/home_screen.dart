@@ -2,20 +2,23 @@ import 'package:flutter/material.dart';
 
 import '../core/money.dart';
 import '../data/models.dart';
+import '../data/reminder_repository.dart';
 import '../services.dart';
 import '../widgets/txn_tile.dart';
 import 'history_screen.dart';
 import 'quick_entry_screen.dart';
+import 'reminders_screen.dart';
 import 'trash_screen.dart';
 
 /// Home dashboard. All numbers come from the SQLite ledger.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
-  Future<(DashboardSummary, List<RecentTxn>)> _load(AppServices s) async {
+  Future<(DashboardSummary, List<RecentTxn>, int)> _load(AppServices s) async {
     final summary = await s.ledger.dashboard();
     final recent = await s.ledger.recent(limit: 5);
-    return (summary, recent);
+    final due = await s.reminders.due();
+    return (summary, recent, due.length);
   }
 
   void _quick(BuildContext context, TxnType type) {
@@ -34,11 +37,12 @@ class HomeScreen extends StatelessWidget {
     return ListenableBuilder(
       listenable: services.bus,
       builder: (context, _) {
-        return FutureBuilder<(DashboardSummary, List<RecentTxn>)>(
+        return FutureBuilder<(DashboardSummary, List<RecentTxn>, int)>(
           future: _load(services),
           builder: (context, snap) {
             final summary = snap.data?.$1 ?? DashboardSummary.empty;
             final recent = snap.data?.$2 ?? const <RecentTxn>[];
+            final dueCount = snap.data?.$3 ?? 0;
             final loading = snap.connectionState != ConnectionState.done &&
                 snap.data == null;
 
@@ -61,6 +65,23 @@ class HomeScreen extends StatelessWidget {
                       style: TextStyle(color: theme.colorScheme.error),
                     ),
                   ),
+                if (dueCount > 0) ...[
+                  Card(
+                    color: Theme.of(context).colorScheme.errorContainer,
+                    child: ListTile(
+                      leading: const Icon(Icons.notifications_active_outlined),
+                      title: Text('$dueCount customer ki wapsi ki tareekh aa gayi'),
+                      subtitle: const Text('Dekhne ke liye dabayein'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const RemindersScreen(),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
                 const SizedBox(height: 8),
                 _StatCard(
                   label: 'Total baaki (Outstanding)',

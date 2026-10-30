@@ -21,6 +21,7 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
   late final TextEditingController _address;
   late final TextEditingController _notes;
   bool _saving = false;
+  int? _dueDate; // start of the due day, epoch millis
 
   @override
   void initState() {
@@ -31,6 +32,7 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
     _phone2 = TextEditingController(text: c?.phone2 ?? '');
     _address = TextEditingController(text: c?.address ?? '');
     _notes = TextEditingController(text: c?.notes ?? '');
+    _dueDate = c?.dueDate;
   }
 
   @override
@@ -84,6 +86,29 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
     return result ?? false;
   }
 
+  String _dueText() {
+    final d = DateTime.fromMillisecondsSinceEpoch(_dueDate!);
+    return '${d.day.toString().padLeft(2, '0')}/'
+        '${d.month.toString().padLeft(2, '0')}/${d.year}';
+  }
+
+  Future<void> _pickDue() async {
+    final now = DateTime.now();
+    final initial = _dueDate == null
+        ? now
+        : DateTime.fromMillisecondsSinceEpoch(_dueDate!);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(now.year + 5, 12, 31),
+    );
+    if (picked != null) {
+      setState(() => _dueDate =
+          DateTime(picked.year, picked.month, picked.day).millisecondsSinceEpoch);
+    }
+  }
+
   Future<void> _save() async {
     if (_saving) return;
     if (!(_formKey.currentState?.validate() ?? false)) return;
@@ -114,7 +139,7 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
           phone2: _phone2.text,
           address: _address.text,
           notes: _notes.text,
-          dueDate: null,
+          dueDate: _dueDate,
         );
       } else {
         await services.customers.update(
@@ -124,7 +149,7 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
           phone2: _phone2.text,
           address: _address.text,
           notes: _notes.text,
-          dueDate: existing.dueDate,
+          dueDate: _dueDate,
         );
       }
       navigator.pop();
@@ -201,6 +226,25 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
               ),
             ),
             const SizedBox(height: 20),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.event_outlined),
+              title: const Text('Wapsi ki tareekh (optional)'),
+              subtitle: Text(
+                _dueDate == null
+                    ? 'Tay nahi. Tareekh lagane par reminder milega.'
+                    : _dueText(),
+              ),
+              trailing: _dueDate == null
+                  ? null
+                  : IconButton(
+                      tooltip: 'Tareekh hatayein',
+                      icon: const Icon(Icons.close),
+                      onPressed: () => setState(() => _dueDate = null),
+                    ),
+              onTap: _pickDue,
+            ),
+            const SizedBox(height: 12),
             FilledButton(
               onPressed: _saving ? null : _save,
               child: const Text('Save'),

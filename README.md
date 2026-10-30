@@ -13,7 +13,7 @@ Nothing has been tested on a real phone by the developer yet.
 | Area | State |
 |---|---|
 | Theme (emerald/ivory, light+dark), 5-tab navigation, Home dashboard | Written; CI build was green for the earlier phases |
-| SQLite schema v2 (customers, transactions, audit log, tombstones) with v1 -> v2 migration | Written, migration test written |
+| SQLite schema v3 (customers, transactions, audit log, tombstones, reminder state) with tested migrations | Written, migration test written |
 | Customers: add, edit, archive, search, duplicate suggestions | Written; CI green for phase 3 |
 | Ledger: integer paise, idempotency keys, atomic writes, reversal, integrity check | Written; CI green for phase 3 |
 | Quick Entry tab (type, customer search, recent customers, repeat last) | Written, not yet built |
@@ -21,7 +21,10 @@ Nothing has been tested on a real phone by the developer yet.
 | Trash screen (30-day retention, restore, permanent delete with tombstones) | Written, not yet built |
 | Reports (today / 7 days / month / custom range), customer statements, CSV and PDF export | Written, not yet built |
 | Voice entry | Pending |
-| Reminders, settings/customization | Pending |
+| Archive (Active/Archived view, unarchive, undo) | Written, not yet built |
+| Due date + in-app reminders (overdue list, snooze, dismiss) | Written, not yet built; no push notifications yet |
+| Settings: theme, accent colour, font size (saved on phone) | Written, not yet built |
+| Language, glass effect, Simple/Pro mode, push notifications | Pending |
 | Google Sign-In, Drive encrypted backup | Pending |
 | Signed release APK + GitHub Releases | Pending |
 

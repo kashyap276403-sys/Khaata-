@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'app.dart';
 import 'data/app_database.dart';
 import 'services.dart';
+import 'settings/app_settings.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,7 +16,8 @@ Future<void> main() async {
     } catch (_) {
       // Cleanup is best-effort and must never block the app from opening.
     }
-    runApp(AuraXApp(services: services));
+    final settings = await AppSettings.load();
+    runApp(AuraXApp(services: services, settings: settings));
   } catch (e) {
     runApp(StartupErrorApp(error: e.toString()));
   }

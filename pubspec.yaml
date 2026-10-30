@@ -1,7 +1,7 @@
 name: khaata
 description: auraX Khaata - free, ad-free, offline-first digital udhaari and jama ledger.
 publish_to: "none"
-version: 0.3.0+3
+version: 0.4.0+4
 
 environment:
   sdk: ">=3.6.0 <4.0.0"
@@ -15,6 +15,7 @@ dependencies:
   pdf: ^3.11.1
   share_plus: ^10.1.4
   path_provider: ^2.1.5
+  shared_preferences: ^2.3.3
 
 dev_dependencies:
   flutter_test:

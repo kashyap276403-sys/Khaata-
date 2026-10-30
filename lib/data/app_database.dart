@@ -13,10 +13,11 @@ import 'package:sqflite/sqflite.dart';
 ///   1: customers, transactions, audit_log
 ///   2: tombstones (permanent-deletion markers, used later so old backups
 ///      cannot silently resurrect deleted records)
+///   3: reminder_state (snooze / dismiss for due-date reminders)
 class AppDatabase {
   AppDatabase._();
 
-  static const int schemaVersion = 2;
+  static const int schemaVersion = 3;
 
   static Future<Database> open({String? path, DatabaseFactory? factory}) async {
     final f = factory ?? databaseFactory;
@@ -40,11 +41,13 @@ class AppDatabase {
   static Future<void> _onCreate(Database db, int version) async {
     await createV1(db);
     await _migrateToV2(db);
+    await _migrateToV3(db);
   }
 
   static Future<void> _onUpgrade(Database db, int oldV, int newV) async {
     // One block per schema version. Never drop or rewrite user data here.
     if (oldV < 2) await _migrateToV2(db);
+    if (oldV < 3) await _migrateToV3(db);
   }
 
   /// The original version-1 schema. Kept so migration tests can build a
@@ -110,6 +113,18 @@ CREATE TABLE IF NOT EXISTS tombstones(
   entity_id TEXT NOT NULL,
   purged_at INTEGER NOT NULL,
   PRIMARY KEY(entity, entity_id)
+)''');
+  }
+
+  static Future<void> _migrateToV3(Database db) async {
+    // snoozed_until: hide the reminder until this time (epoch millis).
+    // dismissed_due: the due date that was dismissed; changing the due date
+    // brings the reminder back.
+    await db.execute('''
+CREATE TABLE IF NOT EXISTS reminder_state(
+  customer_id TEXT PRIMARY KEY REFERENCES customers(id),
+  snoozed_until INTEGER,
+  dismissed_due INTEGER
 )''');
   }
 }

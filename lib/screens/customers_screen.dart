@@ -15,6 +15,7 @@ class CustomersScreen extends StatefulWidget {
 
 class _CustomersScreenState extends State<CustomersScreen> {
   String _query = '';
+  bool _archived = false;
 
   @override
   Widget build(BuildContext context) {
@@ -43,12 +44,32 @@ class _CustomersScreenState extends State<CustomersScreen> {
               ),
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment(
+                  value: false,
+                  icon: Icon(Icons.people_outline),
+                  label: Text('Active'),
+                ),
+                ButtonSegment(
+                  value: true,
+                  icon: Icon(Icons.archive_outlined),
+                  label: Text('Archived'),
+                ),
+              ],
+              selected: {_archived},
+              onSelectionChanged: (s) => setState(() => _archived = s.first),
+            ),
+          ),
           Expanded(
             child: ListenableBuilder(
               listenable: services.bus,
               builder: (context, _) {
                 return FutureBuilder<List<CustomerWithBalance>>(
-                  future: services.customers.list(query: _query),
+                  future: services.customers
+                      .list(query: _query, archived: _archived),
                   builder: (context, snap) {
                     if (snap.hasError) {
                       return Center(
@@ -64,9 +85,12 @@ class _CustomersScreenState extends State<CustomersScreen> {
                         child: Padding(
                           padding: const EdgeInsets.all(32),
                           child: Text(
-                            _query.isEmpty
-                                ? 'Abhi koi customer nahi.\n"Naya customer" dabakar shuru karein.'
-                                : 'Koi customer nahi mila.',
+                            _query.isNotEmpty
+                                ? 'Koi customer nahi mila.'
+                                : _archived
+                                    ? 'Archive me koi customer nahi.\n'
+                                        'Customer ke menu se "Archive" karne par wo yahan aayega.'
+                                    : 'Abhi koi customer nahi.\n"Naya customer" dabakar shuru karein.',
                             textAlign: TextAlign.center,
                             style: theme.textTheme.bodyLarge,
                           ),

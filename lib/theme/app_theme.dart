@@ -8,17 +8,17 @@ class AppTheme {
   static const Color ivory = Color(0xFFFBF7EC);
   static const Color deepGreen = Color(0xFF06261D);
 
-  static ThemeData light() {
+  static ThemeData light([Color seed = emerald]) {
     final scheme = ColorScheme.fromSeed(
-      seedColor: emerald,
+      seedColor: seed,
       brightness: Brightness.light,
     ).copyWith(surface: ivory);
     return _base(scheme);
   }
 
-  static ThemeData dark() {
+  static ThemeData dark([Color seed = emerald]) {
     final scheme = ColorScheme.fromSeed(
-      seedColor: emerald,
+      seedColor: seed,
       brightness: Brightness.dark,
     ).copyWith(surface: deepGreen);
     return _base(scheme);

@@ -2,27 +2,67 @@ import 'package:flutter/material.dart';
 
 import 'screens/app_shell.dart';
 import 'services.dart';
+import 'settings/app_settings.dart';
 import 'theme/app_theme.dart';
 
-class AuraXApp extends StatelessWidget {
-  const AuraXApp({super.key, required this.services});
+class AuraXApp extends StatefulWidget {
+  const AuraXApp({super.key, required this.services, this.settings});
 
   final AppServices services;
+
+  /// Look-and-feel preferences. Defaults to in-memory values (used by tests).
+  final AppSettings? settings;
+
+  @override
+  State<AuraXApp> createState() => _AuraXAppState();
+}
+
+class _AuraXAppState extends State<AuraXApp> {
+  late final AppSettings _settings = widget.settings ?? AppSettings.memory();
 
   @override
   Widget build(BuildContext context) {
     return ServicesScope(
-      services: services,
-      child: MaterialApp(
-        title: 'auraX Khaata',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light(),
-        darkTheme: AppTheme.dark(),
-        themeMode: ThemeMode.system,
-        home: const AppShell(),
+      services: widget.services,
+      child: SettingsScope(
+        settings: _settings,
+        child: ListenableBuilder(
+          listenable: _settings,
+          builder: (context, _) => MaterialApp(
+            title: 'auraX Khaata',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.light(_settings.accent),
+            darkTheme: AppTheme.dark(_settings.accent),
+            themeMode: _settings.themeMode,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(_settings.fontScale),
+              ),
+              child: child ?? const SizedBox.shrink(),
+            ),
+            home: const AppShell(),
+          ),
+        ),
       ),
     );
   }
+}
+
+/// Makes [AppSettings] available to the Settings screen.
+class SettingsScope extends InheritedWidget {
+  const SettingsScope({super.key, required this.settings, required super.child});
+
+  final AppSettings settings;
+
+  static AppSettings of(BuildContext context) {
+    final scope = context.dependOnInheritedWidgetOfExactType<SettingsScope>();
+    assert(scope != null, 'SettingsScope missing above this widget');
+    return scope!.settings;
+  }
+
+  @override
+  bool updateShouldNotify(SettingsScope oldWidget) =>
+      settings != oldWidget.settings;
 }
 
 /// Shown if the local database cannot be opened. Data is not touched.

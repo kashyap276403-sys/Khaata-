@@ -167,17 +167,42 @@ class CustomerDetailScreen extends StatelessWidget {
                         );
                       } else if (v == 'archive') {
                         final nav = Navigator.of(context);
+                        final messenger = ScaffoldMessenger.of(context);
                         await services.customers.setArchived(c.id, true);
                         nav.pop();
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              '${c.name} archive ho gaya. '
+                              'Customers > Archived me milega.',
+                            ),
+                            action: SnackBarAction(
+                              label: 'Undo',
+                              onPressed: () =>
+                                  services.customers.setArchived(c.id, false),
+                            ),
+                          ),
+                        );
+                      } else if (v == 'unarchive') {
+                        final messenger = ScaffoldMessenger.of(context);
+                        await services.customers.setArchived(c.id, false);
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text('${c.name} wapas Active me aa gaya'),
+                          ),
+                        );
                       } else if (v == 'delete') {
                         await _delete(context, c);
                       }
                     },
-                    itemBuilder: (_) => const [
+                    itemBuilder: (_) => [
                       PopupMenuItem(value: 'edit', child: Text('Edit')),
                       PopupMenuItem(
                           value: 'statement', child: Text('Statement')),
-                      PopupMenuItem(value: 'archive', child: Text('Archive')),
+                      PopupMenuItem(
+                        value: c.archived ? 'unarchive' : 'archive',
+                        child: Text(c.archived ? 'Unarchive' : 'Archive'),
+                      ),
                       PopupMenuItem(value: 'delete', child: Text('Delete')),
                     ],
                   ),
@@ -186,6 +211,30 @@ class CustomerDetailScreen extends StatelessWidget {
               body: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
+                  if (c.archived)
+                    Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.archive_outlined),
+                        title: const Text('Yeh customer Archive me hai'),
+                        subtitle: const Text(
+                          'Quick Entry me nahi dikhega, par hisaab aur '
+                          'totals me judta rahega.',
+                        ),
+                        trailing: TextButton(
+                          onPressed: () async {
+                            final messenger = ScaffoldMessenger.of(context);
+                            await services.customers.setArchived(c.id, false);
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content:
+                                    Text('${c.name} wapas Active me aa gaya'),
+                              ),
+                            );
+                          },
+                          child: const Text('Unarchive'),
+                        ),
+                      ),
+                    ),
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
