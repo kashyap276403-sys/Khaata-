@@ -99,6 +99,7 @@ jobs:
         if: github.event_name != 'pull_request'
         continue-on-error: true
         run: |
+          set +e
           commit_back() {
             dart format lib test &&
             git config user.name "github-actions[bot]" &&
@@ -114,6 +115,7 @@ jobs:
           }
           out=$(commit_back 2>&1)
           rc=$?
+          git status --short | head -5 >> /dev/null
           echo "$out"
           if [ $rc -ne 0 ]; then
             msg=$(echo "$out" | tail -8 | sed 's/%/%25/g' | tr '\n' '|')
