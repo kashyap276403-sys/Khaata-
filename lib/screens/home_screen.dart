@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../core/money.dart';
 import '../data/models.dart';
-import '../data/reminder_repository.dart';
 import '../services.dart';
 import '../widgets/txn_tile.dart';
 import 'history_screen.dart';
