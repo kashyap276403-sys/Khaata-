@@ -32,8 +32,10 @@ class GlassCard extends StatelessWidget {
     } catch (_) {}
 
     final base = dark ? Colors.white : Colors.white;
-    final top = base.withValues(alpha: dark ? 0.04 + glass * 0.12 : 0.35 + glass * 0.45);
-    final bottom = base.withValues(alpha: dark ? 0.02 + glass * 0.05 : 0.2 + glass * 0.25);
+    final top = base.withValues(
+        alpha: dark ? 0.04 + glass * 0.12 : 0.35 + glass * 0.45);
+    final bottom =
+        base.withValues(alpha: dark ? 0.02 + glass * 0.05 : 0.2 + glass * 0.25);
     final accent = scheme.primary.withValues(alpha: dark ? 0.28 : 0.16);
 
     return ClipRRect(
@@ -88,13 +90,14 @@ class AuraBackground extends StatelessWidget {
         Positioned(
           top: -120,
           left: -120,
-          child: glow(scheme.primary.withValues(alpha: dark ? 0.42 : 0.22), 420),
+          child:
+              glow(scheme.primary.withValues(alpha: dark ? 0.42 : 0.22), 420),
         ),
         Positioned(
           bottom: -140,
           right: -140,
-          child: glow(
-              scheme.tertiary.withValues(alpha: dark ? 0.30 : 0.16), 460),
+          child:
+              glow(scheme.tertiary.withValues(alpha: dark ? 0.30 : 0.16), 460),
         ),
         Positioned.fill(child: child),
       ],
