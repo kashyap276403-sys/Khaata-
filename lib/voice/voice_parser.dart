@@ -42,7 +42,7 @@ const Set<String> _currency = {
 };
 
 const Set<String> _udhaariWords = {
-  'udhaari', 'udhari', 'udhaar', 'udhar', 'udhari', 'credit', 'loan',
+  'udhaari', 'udhari', 'udhaar', 'udhar', 'credit', 'loan',
   'उधार', 'उधारी',
 };
 
