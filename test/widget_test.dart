@@ -32,6 +32,9 @@ void main() {
       () => Future<void>.delayed(const Duration(milliseconds: 200)),
     );
     await tester.pump();
+    // Let sqflite's 10s lock-warning timer (fake clock) expire.
+    await tester.pump(const Duration(seconds: 11));
     await tester.runAsync(() => db.close());
+    await tester.pump(const Duration(seconds: 11));
   });
 }
