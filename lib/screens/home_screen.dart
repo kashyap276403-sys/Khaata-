@@ -4,6 +4,7 @@ import '../core/money.dart';
 import '../app.dart' show SettingsScope;
 import '../data/models.dart';
 import '../services.dart';
+import '../l10n/strings.dart';
 import '../widgets/glass.dart';
 import '../widgets/integrity_banner.dart';
 import '../widgets/txn_tile.dart';
@@ -55,7 +56,7 @@ class HomeScreen extends StatelessWidget {
                 Text('auraX Khaata', style: theme.textTheme.headlineMedium),
                 const SizedBox(height: 4),
                 Text(
-                  'Namaste! Aapka digital khaata.',
+                  tr(context, 'home.greeting'),
                   style: theme.textTheme.bodyLarge,
                 ),
                 const SizedBox(height: 12),
@@ -74,9 +75,8 @@ class HomeScreen extends StatelessWidget {
                     color: Theme.of(context).colorScheme.errorContainer,
                     child: ListTile(
                       leading: const Icon(Icons.notifications_active_outlined),
-                      title: Text(
-                          '$dueCount customer ki wapsi ki tareekh aa gayi'),
-                      subtitle: const Text('Dekhne ke liye dabayein'),
+                      title: Text(trDue(context, dueCount)),
+                      subtitle: Text(tr(context, 'home.dueSub')),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute<void>(
@@ -89,7 +89,7 @@ class HomeScreen extends StatelessWidget {
                 ],
                 const SizedBox(height: 8),
                 _StatCard(
-                  label: 'Total baaki (Outstanding)',
+                  label: tr(context, 'home.outstanding'),
                   value: formatPaise(summary.outstandingPaise),
                   large: true,
                   highlight: true,
@@ -99,14 +99,14 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _StatCard(
-                        label: 'Aaj ka udhaari',
+                        label: tr(context, 'home.todayUdhaari'),
                         value: formatPaise(summary.todayUdhaariPaise),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: _StatCard(
-                        label: 'Aaj ka jama',
+                        label: tr(context, 'home.todayJama'),
                         value: formatPaise(summary.todayJamaPaise),
                       ),
                     ),
@@ -118,14 +118,14 @@ class HomeScreen extends StatelessWidget {
                     children: [
                       Expanded(
                         child: _StatCard(
-                          label: 'Total customers',
+                          label: tr(context, 'home.customers'),
                           value: '${summary.customerCount}',
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: _StatCard(
-                          label: 'Baaki wale',
+                          label: tr(context, 'home.pending'),
                           value: '${summary.pendingCount}',
                         ),
                       ),
@@ -136,13 +136,13 @@ class HomeScreen extends StatelessWidget {
                 FilledButton.icon(
                   onPressed: () => _quick(context, TxnType.udhaari),
                   icon: const Icon(Icons.add),
-                  label: const Text('Udhaari'),
+                  label: Text(tr(context, 'home.udhaari')),
                 ),
                 const SizedBox(height: 12),
                 FilledButton.tonalIcon(
                   onPressed: () => _quick(context, TxnType.jama),
                   icon: const Icon(Icons.remove),
-                  label: const Text('Jama'),
+                  label: Text(tr(context, 'home.jama')),
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -155,7 +155,7 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ),
                         icon: const Icon(Icons.history),
-                        label: const Text('History'),
+                        label: Text(tr(context, 'home.history')),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -167,18 +167,17 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ),
                         icon: const Icon(Icons.delete_outline),
-                        label: const Text('Trash'),
+                        label: Text(tr(context, 'home.trash')),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 20),
-                Text('Recent transactions', style: theme.textTheme.titleMedium),
+                Text(tr(context, 'home.recent'), style: theme.textTheme.titleMedium),
                 const SizedBox(height: 8),
                 if (!loading && recent.isEmpty)
                   Text(
-                    'Abhi koi transaction nahi. Customers tab me customer '
-                    'chunkar Udhaari ya Jama likhein.',
+                    tr(context, 'home.empty'),
                     style: theme.textTheme.bodyMedium,
                   ),
                 for (final r in recent)

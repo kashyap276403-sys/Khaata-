@@ -2,6 +2,8 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 
+import '../app.dart' show SettingsScope;
+import '../l10n/strings.dart';
 import '../widgets/glass.dart';
 
 import 'customers_screen.dart';
@@ -38,7 +40,9 @@ class _AppShellState extends State<AppShell> {
           child: IndexedStack(index: _index, children: _pages),
         ),
       ),
-      bottomNavigationBar: ClipRect(
+      bottomNavigationBar: ListenableBuilder(
+        listenable: SettingsScope.of(context),
+        builder: (context, _) => ClipRect(
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: DecoratedBox(
@@ -48,42 +52,43 @@ class _AppShellState extends State<AppShell> {
                 top: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
               ),
             ),
-            child: _nav(),
+            child: _nav(context),
           ),
+        ),
         ),
       ),
     );
   }
 
-  Widget _nav() {
+  Widget _nav(BuildContext context) {
     return NavigationBar(
       selectedIndex: _index,
       onDestinationSelected: (i) => setState(() => _index = i),
-      destinations: const [
+      destinations: [
         NavigationDestination(
           icon: Icon(Icons.home_outlined),
           selectedIcon: Icon(Icons.home),
-          label: 'Home',
+          label: tr(context, 'nav.home'),
         ),
         NavigationDestination(
           icon: Icon(Icons.people_outline),
           selectedIcon: Icon(Icons.people),
-          label: 'Customers',
+          label: tr(context, 'nav.customers'),
         ),
         NavigationDestination(
           icon: Icon(Icons.bolt_outlined),
           selectedIcon: Icon(Icons.bolt),
-          label: 'Quick Entry',
+          label: tr(context, 'nav.quick'),
         ),
         NavigationDestination(
           icon: Icon(Icons.bar_chart_outlined),
           selectedIcon: Icon(Icons.bar_chart),
-          label: 'Reports',
+          label: tr(context, 'nav.reports'),
         ),
         NavigationDestination(
           icon: Icon(Icons.settings_outlined),
           selectedIcon: Icon(Icons.settings),
-          label: 'Settings',
+          label: tr(context, 'nav.settings'),
         ),
       ],
     );

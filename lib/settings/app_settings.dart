@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../l10n/strings.dart';
+
 /// Look-and-feel and mode preferences, saved on the phone.
 class AppSettings extends ChangeNotifier {
   AppSettings._(this._prefs, this._themeMode, this._accentIndex,
-      this._fontIndex, this._glassIndex, this._proMode);
+      this._fontIndex, this._glassIndex, this._proMode,
+      [this._language = AppLanguage.hinglish]);
 
   /// Keeps values in memory only (tests, or when storage is unavailable).
   factory AppSettings.memory() =>
@@ -25,6 +28,9 @@ class AppSettings extends ChangeNotifier {
         font.clamp(0, fontScales.length - 1),
         glass.clamp(0, glassAlphas.length - 1),
         p.getBool(_kPro) ?? true,
+        (p.getInt(_kLang) ?? 0) == 1
+            ? AppLanguage.english
+            : AppLanguage.hinglish,
       );
     } catch (_) {
       return AppSettings.memory();
@@ -36,6 +42,7 @@ class AppSettings extends ChangeNotifier {
   static const String _kFont = 'font_index';
   static const String _kGlass = 'glass_index';
   static const String _kPro = 'pro_mode';
+  static const String _kLang = 'language';
 
   /// Accent choices (first is the brand emerald).
   static const List<Color> accentColors = [
@@ -76,7 +83,9 @@ class AppSettings extends ChangeNotifier {
   int _fontIndex;
   int _glassIndex;
   bool _proMode;
+  AppLanguage _language;
 
+  AppLanguage get language => _language;
   ThemeMode get themeMode => _themeMode;
   int get accentIndex => _accentIndex;
   int get fontIndex => _fontIndex;
@@ -111,6 +120,12 @@ class AppSettings extends ChangeNotifier {
     _glassIndex = i.clamp(0, glassAlphas.length - 1);
     notifyListeners();
     await _safe((p) => p.setInt(_kGlass, _glassIndex));
+  }
+
+  Future<void> setLanguage(AppLanguage l) async {
+    _language = l;
+    notifyListeners();
+    await _safe((p) => p.setInt(_kLang, l.index));
   }
 
   Future<void> setProMode(bool v) async {

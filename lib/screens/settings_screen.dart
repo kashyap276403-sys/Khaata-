@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../l10n/strings.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../app.dart' show SettingsScope;
@@ -189,6 +191,23 @@ class SettingsScreen extends StatelessWidget {
             onChanged: (v) => settings.setProMode(!v),
           ),
           const SizedBox(height: 8),
+          Text(tr(context, 'settings.language'),
+              style: theme.textTheme.bodyMedium),
+          const SizedBox(height: 4),
+          SegmentedButton<AppLanguage>(
+            segments: const [
+              ButtonSegment(value: AppLanguage.hinglish, label: Text('Hinglish')),
+              ButtonSegment(value: AppLanguage.english, label: Text('English')),
+            ],
+            selected: {settings.language},
+            onSelectionChanged: (s) => settings.setLanguage(s.first),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(tr(context, 'settings.langNote'),
+                style: theme.textTheme.bodySmall),
+          ),
+          const SizedBox(height: 16),
           Text('Theme', style: theme.textTheme.bodyMedium),
           const SizedBox(height: 4),
           SegmentedButton<ThemeMode>(
