@@ -68,7 +68,8 @@ jobs:
           tail -80 test.txt
           last=$(grep -vE '^\s*$' test.txt | tail -1 | sed 's/%/%25/g')
           if [ $rc -ne 0 ]; then
-            msg=$(grep -vE '^\s*$' test.txt | tail -30 | sed 's/%/%25/g' | tr '\n' '|')
+            msg=$(grep -A10 -E '❌|EXCEPTION CAUGHT|Some tests failed' test.txt | grep -vE '^\s*$' | head -50 | sed 's/%/%25/g' | tr '\n' '|')
+            [ -z "$msg" ] && msg=$(grep -vE '^\s*$' test.txt | tail -30 | sed 's/%/%25/g' | tr '\n' '|')
             echo "::error title=tests failed::${msg}"
           else
             echo "::notice title=tests::${last}"
