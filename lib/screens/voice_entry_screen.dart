@@ -70,13 +70,14 @@ class _VoiceEntryScreenState extends State<VoiceEntryScreen> {
     }
     setState(() => _speechMessage = null);
     final ok = await services.speech.initialize((m) {
-      if (mounted) setState(() => _speechMessage = 'Awaaz pehchanne me dikkat: $m');
+      if (mounted)
+        setState(() => _speechMessage = 'Awaaz pehchanne me dikkat: $m');
     });
     if (!mounted) return;
     if (!ok) {
       setState(() => _speechMessage =
           'Microphone ki ijazat nahi mili ya is phone par speech service '
-          'available nahi hai. Aap neeche type karke bhi likh sakte hain.');
+              'available nahi hai. Aap neeche type karke bhi likh sakte hain.');
       return;
     }
     setState(() => _listening = true);
@@ -172,7 +173,8 @@ class _VoiceEntryScreenState extends State<VoiceEntryScreen> {
     final q = normalizeName(_search.text);
     if (q.isEmpty) return _all.take(6).toList();
     return _all
-        .where((c) => normalizeName(c.name).contains(q) ||
+        .where((c) =>
+            normalizeName(c.name).contains(q) ||
             (c.phone ?? '').contains(q) ||
             c.code.toLowerCase().contains(q))
         .take(8)
@@ -230,7 +232,8 @@ class _VoiceEntryScreenState extends State<VoiceEntryScreen> {
           const SizedBox(height: 8),
           FilledButton.tonal(
             onPressed: _parse,
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+            style:
+                FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
             child: const Text('Samjhein (preview dikhayein)'),
           ),
           if (cmd != null) ...[

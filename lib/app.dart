@@ -6,8 +6,7 @@ import 'settings/app_settings.dart';
 import 'theme/app_theme.dart';
 
 class AuraXApp extends StatefulWidget {
-  const AuraXApp(
-      {super.key, required this.services, this.settings, this.home});
+  const AuraXApp({super.key, required this.services, this.settings, this.home});
 
   final AppServices services;
 

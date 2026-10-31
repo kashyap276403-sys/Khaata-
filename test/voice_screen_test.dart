@@ -48,7 +48,8 @@ void main() {
     );
     await tester.pump();
 
-    await tester.enterText(find.byType(TextField).first, 'Ramesh ke 500 rupaye udhaari');
+    await tester.enterText(
+        find.byType(TextField).first, 'Ramesh ke 500 rupaye udhaari');
     await tester.tap(find.text('Samjhein (preview dikhayein)'));
     await tester.pump();
 
