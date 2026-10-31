@@ -34,8 +34,8 @@ const Map<String, (String, String)> _strings = {
   'home.dueSub': ('Dekhne ke liye dabayein', 'Tap to view'),
   'settings.language': ('Bhasha (Language)', 'Language'),
   'settings.langNote': (
-    'Abhi Home aur neeche ka menu badalta hai; baaki screens abhi Hinglish me hain.',
-    'Currently this changes Home and the bottom menu; other screens are still Hinglish.'
+    'Abhi Home, Customers, Quick Entry aur neeche ka menu badalta hai; baaki screens abhi Hinglish me hain.',
+    'Currently this changes Home, Customers, Quick Entry and the bottom menu; other screens are still Hinglish.'
   ),
   'cust.new': ('Naya customer', 'New customer'),
   'cust.search': (
