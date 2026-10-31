@@ -110,7 +110,7 @@ class _QuickEntryScreenState extends State<QuickEntryScreen> {
                         '${data.last!.txn.type == TxnType.udhaari ? 'Udhaari' : 'Jama'} '
                         '${formatPaise(data.last!.txn.amountPaise)}'
                         '${data.last!.txn.type == TxnType.jama ? ' (${methodLabel(data.last!.txn.method)})' : ''}. '
-                        tr(context, 'q.review'),
+                        '${tr(context, 'q.review')}',
                       ),
                       onTap: () => showEntrySheet(
                         context,
