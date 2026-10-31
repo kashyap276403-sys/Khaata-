@@ -61,7 +61,10 @@ const Map<String, (String, String)> _strings = {
   'txn.jama': ('Jama', 'Payment (Jama)'),
   'q.voice': ('Bolkar likhein', 'Speak to enter'),
   'q.repeat': ('Pichli entry dobara: ', 'Repeat last entry: '),
-  'q.review': ('Save se pehle check hoga.', 'You will review it before saving.'),
+  'q.review': (
+    'Save se pehle check hoga.',
+    'You will review it before saving.'
+  ),
   'q.search': (
     'Customer khojein (naam, phone, ID)',
     'Search customer (name, phone, ID)'

@@ -27,93 +27,95 @@ class _CustomersScreenState extends State<CustomersScreen> {
     return ListenableBuilder(
       listenable: SettingsScope.of(context),
       builder: (context, _) => Scaffold(
-      backgroundColor: Colors.transparent,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(builder: (_) => const CustomerFormScreen()),
+        backgroundColor: Colors.transparent,
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => const CustomerFormScreen()),
+          ),
+          icon: const Icon(Icons.person_add),
+          label: Text(tr(context, 'cust.new')),
         ),
-        icon: const Icon(Icons.person_add),
-        label: Text(tr(context, 'cust.new')),
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: TextField(
-              onChanged: (v) => setState(() => _query = v),
-              decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search),
-                hintText: tr(context, 'cust.search'),
-                border: OutlineInputBorder(),
+        body: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: TextField(
+                onChanged: (v) => setState(() => _query = v),
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.search),
+                  hintText: tr(context, 'cust.search'),
+                  border: OutlineInputBorder(),
+                ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: SegmentedButton<bool>(
-              segments: [
-                ButtonSegment(
-                  value: false,
-                  icon: Icon(Icons.people_outline),
-                  label: Text(tr(context, 'cust.active')),
-                ),
-                ButtonSegment(
-                  value: true,
-                  icon: Icon(Icons.archive_outlined),
-                  label: Text(tr(context, 'cust.archived')),
-                ),
-              ],
-              selected: {_archived},
-              onSelectionChanged: (s) => setState(() => _archived = s.first),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: SegmentedButton<bool>(
+                segments: [
+                  ButtonSegment(
+                    value: false,
+                    icon: Icon(Icons.people_outline),
+                    label: Text(tr(context, 'cust.active')),
+                  ),
+                  ButtonSegment(
+                    value: true,
+                    icon: Icon(Icons.archive_outlined),
+                    label: Text(tr(context, 'cust.archived')),
+                  ),
+                ],
+                selected: {_archived},
+                onSelectionChanged: (s) => setState(() => _archived = s.first),
+              ),
             ),
-          ),
-          Expanded(
-            child: ListenableBuilder(
-              listenable: services.bus,
-              builder: (context, _) {
-                return FutureBuilder<List<CustomerWithBalance>>(
-                  future: services.customers
-                      .list(query: _query, archived: _archived),
-                  builder: (context, snap) {
-                    if (snap.hasError) {
-                      return Center(
-                        child: Text('${tr(context, 'cust.loadFail')}${snap.error}'),
-                      );
-                    }
-                    final data = snap.data;
-                    if (data == null) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (data.isEmpty) {
-                      return Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(32),
+            Expanded(
+              child: ListenableBuilder(
+                listenable: services.bus,
+                builder: (context, _) {
+                  return FutureBuilder<List<CustomerWithBalance>>(
+                    future: services.customers
+                        .list(query: _query, archived: _archived),
+                    builder: (context, snap) {
+                      if (snap.hasError) {
+                        return Center(
                           child: Text(
-                            _query.isNotEmpty
-                                ? tr(context, 'cust.noMatch')
-                                : _archived
-                                    ? tr(context, 'cust.emptyArchive')
-                                    : tr(context, 'cust.empty'),
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.bodyLarge,
+                              '${tr(context, 'cust.loadFail')}${snap.error}'),
+                        );
+                      }
+                      final data = snap.data;
+                      if (data == null) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (data.isEmpty) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(32),
+                            child: Text(
+                              _query.isNotEmpty
+                                  ? tr(context, 'cust.noMatch')
+                                  : _archived
+                                      ? tr(context, 'cust.emptyArchive')
+                                      : tr(context, 'cust.empty'),
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.bodyLarge,
+                            ),
                           ),
-                        ),
+                        );
+                      }
+                      return ListView.separated(
+                        padding: const EdgeInsets.only(bottom: 96),
+                        itemCount: data.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (context, i) =>
+                            _CustomerTile(item: data[i]),
                       );
-                    }
-                    return ListView.separated(
-                      padding: const EdgeInsets.only(bottom: 96),
-                      itemCount: data.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
-                      itemBuilder: (context, i) => _CustomerTile(item: data[i]),
-                    );
-                  },
-                );
-              },
+                    },
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
     );
   }
 }
