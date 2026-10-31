@@ -12,21 +12,18 @@ Nothing has been tested on a real phone by the developer yet.
 
 | Area | State |
 |---|---|
-| Theme (emerald/ivory, light+dark), 5-tab navigation, Home dashboard | Written; CI build was green for the earlier phases |
-| SQLite schema v3 (customers, transactions, audit log, tombstones, reminder state) with tested migrations | Written, migration test written |
-| Customers: add, edit, archive, search, duplicate suggestions | Written; CI green for phase 3 |
-| Ledger: integer paise, idempotency keys, atomic writes, reversal, integrity check | Written; CI green for phase 3 |
-| Quick Entry tab (type, customer search, recent customers, repeat last) | Written, not yet built |
-| History screen (entries with date filter/search/sort, activity log) | Written, not yet built |
-| Trash screen (30-day retention, restore, permanent delete with tombstones) | Written, not yet built |
-| Reports (today / 7 days / month / custom range), customer statements, CSV and PDF export | Written, not yet built |
+| Theme (emerald/ivory, light+dark), accent colour, font size, glass effect, Simple/Pro mode | Written; settings saved on phone |
+| SQLite schema v3 with tested migrations (v1 -> v2 -> v3) | CI green |
+| Customers: add, edit, archive/unarchive, search, duplicate suggestions, due date | CI green |
+| Ledger: integer paise, idempotency keys, atomic writes, reversal, integrity check | CI green |
+| Quick Entry, History (entries + activity), Trash (30-day retention, tombstones) | CI green |
+| Reports (period, customer statements), CSV and PDF export | CI green |
+| In-app reminders (due/overdue, snooze, dismiss) | CI green; no push notifications yet |
+| Data: full JSON export, full ledger CSV, erase all data, ledger check, privacy page | Written, see CI status of latest commit |
 | Voice entry | Pending |
-| Archive (Active/Archived view, unarchive, undo) | Written, not yet built |
-| Due date + in-app reminders (overdue list, snooze, dismiss) | Written, not yet built; no push notifications yet |
-| Settings: theme, accent colour, font size (saved on phone) | Written, not yet built |
-| Language, glass effect, Simple/Pro mode, push notifications | Pending |
-| Google Sign-In, Drive encrypted backup | Pending |
+| Language switch (Hindi/English), push notifications | Pending |
 | Signed release APK + GitHub Releases | Pending |
+| Google Sign-In, Drive encrypted backup (planned last) | Pending |
 
 ## Balance rule (single source of truth)
 

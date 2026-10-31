@@ -89,6 +89,8 @@ String describeActivity(ActivityItem a) {
       final amt = d['amount_paise'];
       final amount = amt is num ? formatPaise(amt.toInt()) : '';
       return 'Galti sudhari (Reverse) $amount$who';
+    case 'system.erase':
+      return 'Saara data is phone se delete kiya gaya';
     default:
       return '${a.entity} ${a.action}';
   }

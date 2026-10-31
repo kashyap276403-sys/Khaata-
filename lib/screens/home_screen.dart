@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../core/money.dart';
+import '../app.dart' show SettingsScope;
 import '../data/models.dart';
 import '../services.dart';
+import '../widgets/integrity_banner.dart';
 import '../widgets/txn_tile.dart';
 import 'history_screen.dart';
 import 'quick_entry_screen.dart';
@@ -31,10 +33,11 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final services = ServicesScope.of(context);
+    final settings = SettingsScope.of(context);
     final theme = Theme.of(context);
 
     return ListenableBuilder(
-      listenable: services.bus,
+      listenable: Listenable.merge([services.bus, settings]),
       builder: (context, _) {
         return FutureBuilder<(DashboardSummary, List<RecentTxn>, int)>(
           future: _load(services),
@@ -64,6 +67,7 @@ class HomeScreen extends StatelessWidget {
                       style: TextStyle(color: theme.colorScheme.error),
                     ),
                   ),
+                const IntegrityBanner(),
                 if (dueCount > 0) ...[
                   Card(
                     color: Theme.of(context).colorScheme.errorContainer,
@@ -106,6 +110,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ],
                 ),
+                if (settings.proMode) ...[
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -124,6 +129,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ],
                 ),
+                ],
                 const SizedBox(height: 16),
                 FilledButton.icon(
                   onPressed: () => _quick(context, TxnType.udhaari),

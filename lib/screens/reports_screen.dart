@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../app.dart' show SettingsScope;
 import '../core/money.dart';
 import '../data/report_repository.dart';
 import '../reports/exporter.dart';
@@ -77,6 +78,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   @override
   Widget build(BuildContext context) {
     final services = ServicesScope.of(context);
+    final settings = SettingsScope.of(context);
     final theme = Theme.of(context);
     final w = _window();
     const labels = {
@@ -87,7 +89,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     };
 
     return ListenableBuilder(
-      listenable: services.bus,
+      listenable: Listenable.merge([services.bus, settings]),
       builder: (context, _) => FutureBuilder<ReportSummary>(
         future: services.reports.summary(fromMs: w.fromMs, toMs: w.toMs),
         builder: (context, snap) {
@@ -139,6 +141,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   value: formatPaise(s.closingOutstandingPaise),
                   big: true,
                 ),
+                if (settings.proMode)
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16),

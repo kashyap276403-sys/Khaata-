@@ -31,8 +31,8 @@ class _AuraXAppState extends State<AuraXApp> {
           builder: (context, _) => MaterialApp(
             title: 'auraX Khaata',
             debugShowCheckedModeBanner: false,
-            theme: AppTheme.light(_settings.accent),
-            darkTheme: AppTheme.dark(_settings.accent),
+            theme: AppTheme.light(_settings.accent, _settings.glassAlpha),
+            darkTheme: AppTheme.dark(_settings.accent, _settings.glassAlpha),
             themeMode: _settings.themeMode,
             builder: (context, child) => MediaQuery(
               data: MediaQuery.of(context).copyWith(

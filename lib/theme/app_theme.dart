@@ -8,23 +8,23 @@ class AppTheme {
   static const Color ivory = Color(0xFFFBF7EC);
   static const Color deepGreen = Color(0xFF06261D);
 
-  static ThemeData light([Color seed = emerald]) {
+  static ThemeData light([Color seed = emerald, double glass = 0.35]) {
     final scheme = ColorScheme.fromSeed(
       seedColor: seed,
       brightness: Brightness.light,
     ).copyWith(surface: ivory);
-    return _base(scheme);
+    return _base(scheme, glass);
   }
 
-  static ThemeData dark([Color seed = emerald]) {
+  static ThemeData dark([Color seed = emerald, double glass = 0.35]) {
     final scheme = ColorScheme.fromSeed(
       seedColor: seed,
       brightness: Brightness.dark,
     ).copyWith(surface: deepGreen);
-    return _base(scheme);
+    return _base(scheme, glass);
   }
 
-  static ThemeData _base(ColorScheme scheme) {
+  static ThemeData _base(ColorScheme scheme, double glass) {
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
@@ -37,8 +37,11 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         elevation: 0,
-        color: scheme.primaryContainer.withValues(alpha: 0.35),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        color: scheme.primaryContainer.withValues(alpha: glass),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: scheme.primary.withValues(alpha: 0.12)),
+        ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(

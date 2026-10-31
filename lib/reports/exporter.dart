@@ -32,6 +32,9 @@ String csvCell(String? v) {
   return s;
 }
 
+/// Plain UTF-8 bytes (no BOM), used for JSON.
+List<int> utf8Bytes(String s) => utf8.encode(s);
+
 /// UTF-8 bytes with a BOM so Excel shows Hindi names correctly.
 List<int> csvBytes(String csv) => [0xEF, 0xBB, 0xBF, ...utf8.encode(csv)];
 
@@ -245,4 +248,45 @@ Future<Uint8List> buildStatementPdf(
     ),
   );
   return doc.save();
+}
+
+/// Every ledger entry (including reversals and entries of customers that are
+/// in Trash) for a portable spreadsheet copy of the whole ledger.
+String buildLedgerCsv(List<Map<String, Object?>> rows) {
+  final b = StringBuffer();
+  void line(List<String?> c) => b.write('${_row(c)}\r\n');
+  line([
+    'Customer ID',
+    'Customer',
+    'Date',
+    'Type',
+    'Method',
+    'Amount (Rs)',
+    'Note',
+    'Reversal of entry',
+    'Customer in Trash',
+  ]);
+  for (final r in rows) {
+    final isRev = r['reverses_id'] != null;
+    final type = r['type'] as String;
+    final method = r['method'] as String;
+    final typeText = isRev
+        ? (type == 'udhaari' ? 'Reversal (Udhaari)' : 'Reversal (Jama)')
+        : (type == 'udhaari' ? 'Udhaari' : 'Jama');
+    final methodText = (type == 'jama' && !isRev)
+        ? (method == 'cash' ? 'Cash' : method == 'upi' ? 'UPI' : 'Other')
+        : '';
+    line([
+      'C${(r['seq'] as int).toString().padLeft(4, '0')}',
+      r['customer_name'] as String,
+      formatDateTime(r['created_at'] as int),
+      typeText,
+      methodText,
+      rupeesPlain(r['amount_paise'] as int),
+      r['note'] as String?,
+      r['reverses_id'] as String?,
+      r['customer_deleted_at'] == null ? 'No' : 'Yes',
+    ]);
+  }
+  return b.toString();
 }
