@@ -193,7 +193,7 @@ void main() {
     test('defaults, changes and persistence', () async {
       SharedPreferences.setMockInitialValues({});
       final s = await AppSettings.load();
-      expect(s.themeMode, ThemeMode.system);
+      expect(s.themeMode, ThemeMode.dark);
       expect(s.accentIndex, 0);
       expect(s.fontScale, 1.0);
 

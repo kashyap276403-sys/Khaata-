@@ -8,13 +8,13 @@ class AppSettings extends ChangeNotifier {
 
   /// Keeps values in memory only (tests, or when storage is unavailable).
   factory AppSettings.memory() =>
-      AppSettings._(null, ThemeMode.system, 0, 1, 1, true);
+      AppSettings._(null, ThemeMode.dark, 0, 1, 1, true);
 
   /// Loads saved values; falls back to defaults if storage fails.
   static Future<AppSettings> load() async {
     try {
       final p = await SharedPreferences.getInstance();
-      final mode = p.getInt(_kTheme) ?? ThemeMode.system.index;
+      final mode = p.getInt(_kTheme) ?? ThemeMode.dark.index;
       final accent = p.getInt(_kAccent) ?? 0;
       final font = p.getInt(_kFont) ?? 1;
       final glass = p.getInt(_kGlass) ?? 1;

@@ -170,7 +170,7 @@ void main() {
       SharedPreferences.setMockInitialValues({'glass_index': 42});
       final s = await AppSettings.load();
       expect(s.glassIndex, AppSettings.glassAlphas.length - 1);
-      expect(s.themeMode, ThemeMode.system);
+      expect(s.themeMode, ThemeMode.dark);
     });
   });
 }

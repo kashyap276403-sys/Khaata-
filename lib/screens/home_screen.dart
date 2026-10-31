@@ -4,6 +4,7 @@ import '../core/money.dart';
 import '../app.dart' show SettingsScope;
 import '../data/models.dart';
 import '../services.dart';
+import '../widgets/glass.dart';
 import '../widgets/integrity_banner.dart';
 import '../widgets/txn_tile.dart';
 import 'history_screen.dart';
@@ -91,6 +92,7 @@ class HomeScreen extends StatelessWidget {
                   label: 'Total baaki (Outstanding)',
                   value: formatPaise(summary.outstandingPaise),
                   large: true,
+                  highlight: true,
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -195,18 +197,21 @@ class _StatCard extends StatelessWidget {
     required this.label,
     required this.value,
     this.large = false,
+    this.highlight = false,
   });
 
   final String label;
   final String value;
   final bool large;
+  final bool highlight;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
+    return GlassCard(
+      highlight: highlight,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.zero,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

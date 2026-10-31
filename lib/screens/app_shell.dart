@@ -1,4 +1,8 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
+
+import '../widgets/glass.dart';
 
 import 'customers_screen.dart';
 import 'home_screen.dart';
@@ -27,10 +31,32 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: IndexedStack(index: _index, children: _pages),
+      extendBody: true,
+      backgroundColor: Colors.transparent,
+      body: AuraBackground(
+        child: SafeArea(
+          child: IndexedStack(index: _index, children: _pages),
+        ),
       ),
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              border: Border(
+                top: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+              ),
+            ),
+            child: _nav(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _nav() {
+    return NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
         destinations: const [
@@ -60,7 +86,6 @@ class _AppShellState extends State<AppShell> {
             label: 'Settings',
           ),
         ],
-      ),
     );
   }
 }
