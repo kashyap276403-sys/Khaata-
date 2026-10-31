@@ -43,18 +43,18 @@ class _AppShellState extends State<AppShell> {
       bottomNavigationBar: ListenableBuilder(
         listenable: SettingsScope.of(context),
         builder: (context, _) => ClipRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              border: Border(
-                top: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                border: Border(
+                  top: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+                ),
               ),
+              child: _nav(context),
             ),
-            child: _nav(context),
           ),
-        ),
         ),
       ),
     );

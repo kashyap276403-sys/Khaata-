@@ -173,7 +173,8 @@ class HomeScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 20),
-                Text(tr(context, 'home.recent'), style: theme.textTheme.titleMedium),
+                Text(tr(context, 'home.recent'),
+                    style: theme.textTheme.titleMedium),
                 const SizedBox(height: 8),
                 if (!loading && recent.isEmpty)
                   Text(

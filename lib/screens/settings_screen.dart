@@ -196,7 +196,8 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 4),
           SegmentedButton<AppLanguage>(
             segments: const [
-              ButtonSegment(value: AppLanguage.hinglish, label: Text('Hinglish')),
+              ButtonSegment(
+                  value: AppLanguage.hinglish, label: Text('Hinglish')),
               ButtonSegment(value: AppLanguage.english, label: Text('English')),
             ],
             selected: {settings.language},
