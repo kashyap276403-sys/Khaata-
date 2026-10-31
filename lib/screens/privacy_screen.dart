@@ -9,7 +9,14 @@ class PrivacyScreen extends StatelessWidget {
     (
       'Aapka data kahan rehta hai',
       'Customers, entries aur history sirf aapke phone ki memory me rehte hain. '
-          'Abhi app koi data internet par nahi bhejta.',
+          'Abhi app apna koi data internet par nahi bhejta (sirf voice entry me Android ki speech service, neeche dekhein).',
+    ),
+    (
+      'Awaaz (voice entry)',
+      'Bolkar likhne par mic ki ijazat maangi jaati hai. Aapki awaaz Android ki '
+          'speech service samajhti hai (aam taur par Google), jo internet ka '
+          'istemal kar sakti hai. App awaaz save nahi karta, sirf samjha hua text '
+          'dikhata hai. Aap mic ke bina type karke bhi likh sakte hain.',
     ),
     (
       'Hum kya nahi karte',

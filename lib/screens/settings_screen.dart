@@ -331,7 +331,7 @@ class SettingsScreen extends StatelessWidget {
             leading: Icon(Icons.hourglass_empty),
             title: Text('Aane wale'),
             subtitle: Text(
-              'Language, notifications, voice entry aur Google backup '
+              'Language, notifications aur Google backup '
               'agle phases me aayenge.',
             ),
           ),

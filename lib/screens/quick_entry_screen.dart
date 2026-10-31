@@ -5,6 +5,7 @@ import '../data/models.dart';
 import '../services.dart';
 import '../widgets/entry_sheet.dart';
 import '../widgets/txn_tile.dart';
+import 'voice_entry_screen.dart';
 
 class _QuickData {
   const _QuickData(this.customers, this.last);
@@ -60,6 +61,16 @@ class _QuickEntryScreenState extends State<QuickEntryScreen> {
               children: [
                 if (!widget.showAppBar)
                   Text('Quick Entry', style: theme.textTheme.headlineMedium),
+                const SizedBox(height: 12),
+                FilledButton.tonalIcon(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const VoiceEntryScreen(),
+                    ),
+                  ),
+                  icon: const Icon(Icons.mic),
+                  label: const Text('Bolkar likhein'),
+                ),
                 const SizedBox(height: 12),
                 SegmentedButton<TxnType>(
                   style: SegmentedButton.styleFrom(

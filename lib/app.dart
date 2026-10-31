@@ -6,12 +6,16 @@ import 'settings/app_settings.dart';
 import 'theme/app_theme.dart';
 
 class AuraXApp extends StatefulWidget {
-  const AuraXApp({super.key, required this.services, this.settings});
+  const AuraXApp(
+      {super.key, required this.services, this.settings, this.home});
 
   final AppServices services;
 
   /// Look-and-feel preferences. Defaults to in-memory values (used by tests).
   final AppSettings? settings;
+
+  /// Overrides the first screen (used by tests).
+  final Widget? home;
 
   @override
   State<AuraXApp> createState() => _AuraXAppState();
@@ -40,7 +44,7 @@ class _AuraXAppState extends State<AuraXApp> {
               ),
               child: child ?? const SizedBox.shrink(),
             ),
-            home: const AppShell(),
+            home: widget.home ?? const AppShell(),
           ),
         ),
       ),

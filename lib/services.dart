@@ -7,13 +7,14 @@ import 'data/export_repository.dart';
 import 'data/ledger_repository.dart';
 import 'data/reminder_repository.dart';
 import 'data/report_repository.dart';
+import 'voice/speech_service.dart';
 
 /// Everything the UI needs from the data layer.
 class AppServices {
   AppServices._(this.db, this.bus, this.customers, this.ledger, this.reports,
-      this.reminders, this.exports);
+      this.reminders, this.exports, this.speech);
 
-  factory AppServices.fromDatabase(Database db) {
+  factory AppServices.fromDatabase(Database db, {SpeechService? speech}) {
     final bus = ChangeBus();
     return AppServices._(
       db,
@@ -23,6 +24,7 @@ class AppServices {
       ReportRepository(db),
       ReminderRepository(db, bus),
       ExportRepository(db, bus),
+      speech ?? DeviceSpeechService(),
     );
   }
 
@@ -33,6 +35,7 @@ class AppServices {
   final ReportRepository reports;
   final ReminderRepository reminders;
   final ExportRepository exports;
+  final SpeechService speech;
 }
 
 class ServicesScope extends InheritedWidget {

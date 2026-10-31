@@ -47,3 +47,13 @@ applicationId stays stable. The debug APK is attached as a workflow artifact.
 
 - Money is stored as integer paise, never float/double.
 - Never commit keystores or passwords (see `.gitignore`).
+
+## Voice entry (Bolkar likhein) - v0.6.0
+
+Quick Entry -> "Bolkar likhein". Hindi/English sentence (spoken or typed) ->
+preview -> aap confirm karein -> tabhi save. Kuch bhi apne aap save nahi hota.
+
+- Parser pure Dart hai aur tests me check hota hai (test/voice_test.dart).
+- Awaaz Android ki speech service samajhti hai (aam taur par Google, internet
+  use kar sakti hai). App awaaz save nahi karta. Mic ke bina type kar sakte hain.
+- Status: CI tests ke liye likhe gaye hain; asli phone par mic abhi test nahi hua.
