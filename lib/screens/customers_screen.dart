@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../app.dart' show SettingsScope;
 import '../core/money.dart';
+import '../l10n/strings.dart';
 import '../data/models.dart';
 import '../services.dart';
 import 'customer_detail_screen.dart';
@@ -22,14 +24,16 @@ class _CustomersScreenState extends State<CustomersScreen> {
     final services = ServicesScope.of(context);
     final theme = Theme.of(context);
 
-    return Scaffold(
+    return ListenableBuilder(
+      listenable: SettingsScope.of(context),
+      builder: (context, _) => Scaffold(
       backgroundColor: Colors.transparent,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.of(context).push(
           MaterialPageRoute<void>(builder: (_) => const CustomerFormScreen()),
         ),
         icon: const Icon(Icons.person_add),
-        label: const Text('Naya customer'),
+        label: Text(tr(context, 'cust.new')),
       ),
       body: Column(
         children: [
@@ -37,9 +41,9 @@ class _CustomersScreenState extends State<CustomersScreen> {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: TextField(
               onChanged: (v) => setState(() => _query = v),
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search),
-                hintText: 'Naam, phone ya ID se khojein',
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search),
+                hintText: tr(context, 'cust.search'),
                 border: OutlineInputBorder(),
               ),
             ),
@@ -47,16 +51,16 @@ class _CustomersScreenState extends State<CustomersScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: SegmentedButton<bool>(
-              segments: const [
+              segments: [
                 ButtonSegment(
                   value: false,
                   icon: Icon(Icons.people_outline),
-                  label: Text('Active'),
+                  label: Text(tr(context, 'cust.active')),
                 ),
                 ButtonSegment(
                   value: true,
                   icon: Icon(Icons.archive_outlined),
-                  label: Text('Archived'),
+                  label: Text(tr(context, 'cust.archived')),
                 ),
               ],
               selected: {_archived},
@@ -73,7 +77,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
                   builder: (context, snap) {
                     if (snap.hasError) {
                       return Center(
-                        child: Text('Load nahi hua: ${snap.error}'),
+                        child: Text('${tr(context, 'cust.loadFail')}${snap.error}'),
                       );
                     }
                     final data = snap.data;
@@ -86,11 +90,10 @@ class _CustomersScreenState extends State<CustomersScreen> {
                           padding: const EdgeInsets.all(32),
                           child: Text(
                             _query.isNotEmpty
-                                ? 'Koi customer nahi mila.'
+                                ? tr(context, 'cust.noMatch')
                                 : _archived
-                                    ? 'Archive me koi customer nahi.\n'
-                                        'Customer ke menu se "Archive" karne par wo yahan aayega.'
-                                    : 'Abhi koi customer nahi.\n"Naya customer" dabakar shuru karein.',
+                                    ? tr(context, 'cust.emptyArchive')
+                                    : tr(context, 'cust.empty'),
                             textAlign: TextAlign.center,
                             style: theme.textTheme.bodyLarge,
                           ),
@@ -110,6 +113,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
           ),
         ],
       ),
+    ),
     );
   }
 }
@@ -127,13 +131,13 @@ class _CustomerTile extends StatelessWidget {
     final String status;
     final Color color;
     if (bal > 0) {
-      status = 'Baaki';
+      status = tr(context, 'cust.due');
       color = scheme.error;
     } else if (bal < 0) {
-      status = 'Advance';
+      status = tr(context, 'cust.advance');
       color = scheme.primary;
     } else {
-      status = 'Barabar';
+      status = tr(context, 'cust.settled');
       color = scheme.onSurfaceVariant;
     }
 

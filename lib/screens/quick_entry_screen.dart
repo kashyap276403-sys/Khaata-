@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../app.dart' show SettingsScope;
 import '../core/money.dart';
+import '../l10n/strings.dart';
 import '../data/models.dart';
 import '../services.dart';
 import '../widgets/entry_sheet.dart';
@@ -46,10 +48,14 @@ class _QuickEntryScreenState extends State<QuickEntryScreen> {
     final services = ServicesScope.of(context);
     final theme = Theme.of(context);
 
-    return Scaffold(
+    return ListenableBuilder(
+      listenable: SettingsScope.of(context),
+      builder: (context, _) => Scaffold(
       backgroundColor: Colors.transparent,
       appBar:
-          widget.showAppBar ? AppBar(title: const Text('Quick Entry')) : null,
+          widget.showAppBar
+              ? AppBar(title: Text(tr(context, 'nav.quick')))
+              : null,
       body: ListenableBuilder(
         listenable: services.bus,
         builder: (context, _) => FutureBuilder<_QuickData>(
@@ -60,7 +66,8 @@ class _QuickEntryScreenState extends State<QuickEntryScreen> {
               padding: const EdgeInsets.all(16),
               children: [
                 if (!widget.showAppBar)
-                  Text('Quick Entry', style: theme.textTheme.headlineMedium),
+                  Text(tr(context, 'nav.quick'),
+                      style: theme.textTheme.headlineMedium),
                 const SizedBox(height: 12),
                 FilledButton.tonalIcon(
                   onPressed: () => Navigator.of(context).push(
@@ -69,23 +76,23 @@ class _QuickEntryScreenState extends State<QuickEntryScreen> {
                     ),
                   ),
                   icon: const Icon(Icons.mic),
-                  label: const Text('Bolkar likhein'),
+                  label: Text(tr(context, 'q.voice')),
                 ),
                 const SizedBox(height: 12),
                 SegmentedButton<TxnType>(
                   style: SegmentedButton.styleFrom(
                     minimumSize: const Size.fromHeight(56),
                   ),
-                  segments: const [
+                  segments: [
                     ButtonSegment(
                       value: TxnType.udhaari,
                       icon: Icon(Icons.add),
-                      label: Text('Udhaari'),
+                      label: Text(tr(context, 'txn.udhaari')),
                     ),
                     ButtonSegment(
                       value: TxnType.jama,
                       icon: Icon(Icons.remove),
-                      label: Text('Jama'),
+                      label: Text(tr(context, 'txn.jama')),
                     ),
                   ],
                   selected: {_type},
@@ -97,13 +104,13 @@ class _QuickEntryScreenState extends State<QuickEntryScreen> {
                     child: ListTile(
                       leading: const Icon(Icons.replay),
                       title: Text(
-                        'Pichli entry dobara: ${data!.last!.customerName}',
+                        '${tr(context, 'q.repeat')}${data!.last!.customerName}',
                       ),
                       subtitle: Text(
                         '${data.last!.txn.type == TxnType.udhaari ? 'Udhaari' : 'Jama'} '
                         '${formatPaise(data.last!.txn.amountPaise)}'
                         '${data.last!.txn.type == TxnType.jama ? ' (${methodLabel(data.last!.txn.method)})' : ''}. '
-                        'Save se pehle check hoga.',
+                        tr(context, 'q.review'),
                       ),
                       onTap: () => showEntrySheet(
                         context,
@@ -118,23 +125,23 @@ class _QuickEntryScreenState extends State<QuickEntryScreen> {
                 const SizedBox(height: 8),
                 TextField(
                   onChanged: (v) => setState(() => _query = v),
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.search),
-                    hintText: 'Customer khojein (naam, phone, ID)',
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.search),
+                    hintText: tr(context, 'q.search'),
                     border: OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   _query.trim().isEmpty
-                      ? 'Haal ke customers'
-                      : 'Khoj ke nateeje',
+                      ? tr(context, 'q.recent')
+                      : tr(context, 'q.results'),
                   style: theme.textTheme.titleMedium,
                 ),
                 if (snap.hasError)
                   Padding(
                     padding: const EdgeInsets.all(8),
-                    child: Text('Load nahi hua: ${snap.error}'),
+                    child: Text('${tr(context, 'cust.loadFail')}${snap.error}'),
                   )
                 else if (data == null)
                   const Padding(
@@ -146,9 +153,8 @@ class _QuickEntryScreenState extends State<QuickEntryScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Text(
                       _query.trim().isEmpty
-                          ? 'Abhi koi haal ka customer nahi. Upar khoj me naam likhein, '
-                              'ya Customers tab me naya customer banayein.'
-                          : 'Koi customer nahi mila.',
+                          ? tr(context, 'q.emptyRecent')
+                          : tr(context, 'cust.noMatch'),
                       style: theme.textTheme.bodyMedium,
                     ),
                   )
@@ -178,6 +184,7 @@ class _QuickEntryScreenState extends State<QuickEntryScreen> {
           },
         ),
       ),
+    ),
     );
   }
 }
