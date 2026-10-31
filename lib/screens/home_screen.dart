@@ -111,24 +111,24 @@ class HomeScreen extends StatelessWidget {
                   ],
                 ),
                 if (settings.proMode) ...[
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _StatCard(
-                        label: 'Total customers',
-                        value: '${summary.customerCount}',
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatCard(
+                          label: 'Total customers',
+                          value: '${summary.customerCount}',
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _StatCard(
-                        label: 'Baaki wale',
-                        value: '${summary.pendingCount}',
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _StatCard(
+                          label: 'Baaki wale',
+                          value: '${summary.pendingCount}',
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
                 ],
                 const SizedBox(height: 16),
                 FilledButton.icon(

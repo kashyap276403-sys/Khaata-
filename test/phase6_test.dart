@@ -62,8 +62,9 @@ void main() {
   group('export', () {
     test('JSON holds every record, amounts stay integer paise', () async {
       await seed();
-      final map = jsonDecode(await exports.exportJson(now: DateTime.utc(2026, 10, 31)))
-          as Map<String, dynamic>;
+      final map =
+          jsonDecode(await exports.exportJson(now: DateTime.utc(2026, 10, 31)))
+              as Map<String, dynamic>;
       expect(map['format_version'], 1);
       expect(map['schema_version'], AppDatabase.schemaVersion);
       expect(map['exported_at_utc'], startsWith('2026-10-31'));
@@ -75,7 +76,8 @@ void main() {
       expect((map['audit_log'] as List).isNotEmpty, isTrue);
     });
 
-    test('ledger CSV lists all rows, neutralises formulas, no method on udhaari',
+    test(
+        'ledger CSV lists all rows, neutralises formulas, no method on udhaari',
         () async {
       await seed();
       final csv = buildLedgerCsv(await exports.ledgerRows());

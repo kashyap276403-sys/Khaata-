@@ -274,7 +274,11 @@ String buildLedgerCsv(List<Map<String, Object?>> rows) {
         ? (type == 'udhaari' ? 'Reversal (Udhaari)' : 'Reversal (Jama)')
         : (type == 'udhaari' ? 'Udhaari' : 'Jama');
     final methodText = (type == 'jama' && !isRev)
-        ? (method == 'cash' ? 'Cash' : method == 'upi' ? 'UPI' : 'Other')
+        ? (method == 'cash'
+            ? 'Cash'
+            : method == 'upi'
+                ? 'UPI'
+                : 'Other')
         : '';
     line([
       'C${(r['seq'] as int).toString().padLeft(4, '0')}',

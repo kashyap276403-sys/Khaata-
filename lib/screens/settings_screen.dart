@@ -135,7 +135,8 @@ class SettingsScreen extends StatelessWidget {
         ),
       );
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Delete nahi ho paya: $e')));
+      messenger
+          .showSnackBar(SnackBar(content: Text('Delete nahi ho paya: $e')));
     }
   }
 
@@ -262,7 +263,8 @@ class SettingsScreen extends StatelessWidget {
             onSelectionChanged: (s) => settings.setFontIndex(s.first),
           ),
           const SizedBox(height: 16),
-          Text('Glass effect (cards ka rang)', style: theme.textTheme.bodyMedium),
+          Text('Glass effect (cards ka rang)',
+              style: theme.textTheme.bodyMedium),
           const SizedBox(height: 4),
           SegmentedButton<int>(
             segments: [
@@ -281,7 +283,8 @@ class SettingsScreen extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.download_outlined),
             title: const Text('Poora data download (JSON)'),
-            subtitle: const Text('Saare customers, entries aur history ki copy'),
+            subtitle:
+                const Text('Saare customers, entries aur history ki copy'),
             onTap: () => _exportJson(context),
           ),
           ListTile(
@@ -294,7 +297,8 @@ class SettingsScreen extends StatelessWidget {
             ListTile(
               leading: const Icon(Icons.fact_check_outlined),
               title: const Text('Hisaab ki jaanch'),
-              subtitle: const Text('Ledger me koi gadbad to nahi, check karein'),
+              subtitle:
+                  const Text('Ledger me koi gadbad to nahi, check karein'),
               onTap: () => _checkLedger(context),
             ),
           ListTile(
@@ -302,7 +306,8 @@ class SettingsScreen extends StatelessWidget {
                 color: theme.colorScheme.error),
             title: Text('Poora data delete karein',
                 style: TextStyle(color: theme.colorScheme.error)),
-            subtitle: const Text('Is phone se sab kuch hamesha ke liye hat jayega'),
+            subtitle:
+                const Text('Is phone se sab kuch hamesha ke liye hat jayega'),
             onTap: () => _eraseAll(context),
           ),
           const Divider(height: 32),

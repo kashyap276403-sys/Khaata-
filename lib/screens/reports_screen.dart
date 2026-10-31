@@ -142,22 +142,22 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   big: true,
                 ),
                 if (settings.proMode)
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Jama kaise mila',
-                            style: theme.textTheme.titleSmall),
-                        const SizedBox(height: 6),
-                        Text('Cash: ${formatPaise(s.jamaCashPaise)}'),
-                        Text('UPI: ${formatPaise(s.jamaUpiPaise)}'),
-                        Text('Other: ${formatPaise(s.jamaOtherPaise)}'),
-                      ],
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Jama kaise mila',
+                              style: theme.textTheme.titleSmall),
+                          const SizedBox(height: 6),
+                          Text('Cash: ${formatPaise(s.jamaCashPaise)}'),
+                          Text('UPI: ${formatPaise(s.jamaUpiPaise)}'),
+                          Text('Other: ${formatPaise(s.jamaOtherPaise)}'),
+                        ],
+                      ),
                     ),
                   ),
-                ),
                 const SizedBox(height: 4),
                 Text(
                   '${s.entryCount} entries, jinme ${s.reversalCount} reversal. '
