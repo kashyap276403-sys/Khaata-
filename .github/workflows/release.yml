@@ -1,0 +1,85 @@
+name: Release (signed APK)
+
+# Runs when you push a tag like v0.6.0. Needs 4 GitHub Secrets (see docs/RELEASE.md).
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check signing secrets exist
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KSP: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KA: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KP: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          for v in KS KSP KA KP; do
+            if [ -z "${!v}" ]; then
+              echo "::error::Secret for $v is missing. Release NOT built (a debug-signed APK must never be released). See docs/RELEASE.md"
+              exit 1
+            fi
+          done
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install SQLite (tests)
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+
+      - run: flutter pub get
+      - run: flutter analyze --no-fatal-infos
+      - run: flutter test
+
+      - name: Write keystore and key.properties (never committed)
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KSP: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KA: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KP: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$KS" | base64 -d > "$RUNNER_TEMP/release.jks"
+          {
+            echo "storeFile=$RUNNER_TEMP/release.jks"
+            echo "storePassword=$KSP"
+            echo "keyAlias=$KA"
+            echo "keyPassword=$KP"
+          } > android/key.properties
+
+      - name: Build signed release APK
+        run: flutter build apk --release
+
+      - name: Verify APK is signed with the release key
+        run: |
+          APKSIGNER=$(ls $ANDROID_HOME/build-tools/*/apksigner | tail -n 1)
+          "$APKSIGNER" verify --print-certs build/app/outputs/flutter-apk/app-release.apk | tee "$RUNNER_TEMP/cert.txt"
+          if grep -qi "Android Debug" "$RUNNER_TEMP/cert.txt"; then
+            echo "::error::APK is signed with debug key. Aborting."; exit 1
+          fi
+
+      - name: Name the APK
+        run: cp build/app/outputs/flutter-apk/app-release.apk "auraX-Khaata-${GITHUB_REF_NAME}.apk"
+
+      - name: Remove signing material
+        if: always()
+        run: rm -f android/key.properties "$RUNNER_TEMP/release.jks"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: auraX-Khaata-${{ github.ref_name }}.apk
+          generate_release_notes: true
