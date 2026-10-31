@@ -15,6 +15,16 @@ import 'trash_screen.dart';
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
+  /// Version text; never throws (the plugin may be unavailable, e.g. in tests).
+  static Future<String> _versionText() async {
+    try {
+      final i = await PackageInfo.fromPlatform();
+      return 'Version ${i.version} (build ${i.buildNumber})';
+    } catch (_) {
+      return 'Version pata nahi chala';
+    }
+  }
+
   Future<void> _checkLedger(BuildContext context) async {
     final services = ServicesScope.of(context);
     final issues = await services.ledger.integrityIssues();
@@ -304,18 +314,13 @@ class SettingsScreen extends StatelessWidget {
               MaterialPageRoute<void>(builder: (_) => const PrivacyScreen()),
             ),
           ),
-          FutureBuilder<PackageInfo>(
-            future: PackageInfo.fromPlatform(),
-            builder: (context, snap) {
-              final i = snap.data;
-              return ListTile(
-                leading: const Icon(Icons.info_outline),
-                title: const Text('auraX Khaata'),
-                subtitle: Text(i == null
-                    ? 'Version load ho raha hai...'
-                    : 'Version ${i.version} (build ${i.buildNumber})'),
-              );
-            },
+          FutureBuilder<String>(
+            future: _versionText(),
+            builder: (context, snap) => ListTile(
+              leading: const Icon(Icons.info_outline),
+              title: const Text('auraX Khaata'),
+              subtitle: Text(snap.data ?? 'Version load ho raha hai...'),
+            ),
           ),
           const ListTile(
             leading: Icon(Icons.hourglass_empty),
