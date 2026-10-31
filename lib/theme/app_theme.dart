@@ -1,5 +1,32 @@
 import 'package:flutter/material.dart';
 
+import '../widgets/glass.dart';
+
+/// Wraps every page in the ambient glow background so all screens (not just
+/// the main tabs) share the same black glass look.
+class _AuraTransitions extends PageTransitionsBuilder {
+  const _AuraTransitions();
+
+  static const PageTransitionsBuilder _base = ZoomPageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    return _base.buildTransitions<T>(
+      route,
+      context,
+      animation,
+      secondaryAnimation,
+      AuraBackground(child: child),
+    );
+  }
+}
+
 /// Emerald + warm ivory brand theme.
 class AppTheme {
   AppTheme._();
@@ -32,7 +59,21 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
-      scaffoldBackgroundColor: scheme.surface,
+      scaffoldBackgroundColor: Colors.transparent,
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: _AuraTransitions(),
+          TargetPlatform.iOS: _AuraTransitions(),
+          TargetPlatform.linux: _AuraTransitions(),
+          TargetPlatform.macOS: _AuraTransitions(),
+          TargetPlatform.windows: _AuraTransitions(),
+          TargetPlatform.fuchsia: _AuraTransitions(),
+        },
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: scheme.surfaceContainer,
+        surfaceTintColor: Colors.transparent,
+      ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -41,7 +82,7 @@ class AppTheme {
       appBarTheme: AppBarTheme(
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
-        backgroundColor: scheme.surface,
+        backgroundColor: Colors.transparent,
         foregroundColor: scheme.onSurface,
         elevation: 0,
         centerTitle: false,

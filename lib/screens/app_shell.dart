@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import '../app.dart' show SettingsScope;
 import '../l10n/strings.dart';
-import '../widgets/glass.dart';
 
 import 'customers_screen.dart';
 import 'home_screen.dart';
@@ -35,10 +34,8 @@ class _AppShellState extends State<AppShell> {
     return Scaffold(
       extendBody: true,
       backgroundColor: Colors.transparent,
-      body: AuraBackground(
-        child: SafeArea(
-          child: IndexedStack(index: _index, children: _pages),
-        ),
+      body: SafeArea(
+        child: IndexedStack(index: _index, children: _pages),
       ),
       bottomNavigationBar: ListenableBuilder(
         listenable: SettingsScope.of(context),
