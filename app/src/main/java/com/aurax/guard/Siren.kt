@@ -11,6 +11,7 @@ import android.os.Looper
 /** Loud alarm sound that plays even if the phone is on silent. */
 object Siren {
     private var player: MediaPlayer? = null
+    private var appCtx: Context? = null
     private val main = Handler(Looper.getMainLooper())
     private val autoStop = Runnable { stop() }
 
@@ -18,6 +19,7 @@ object Siren {
     fun start(context: Context, seconds: Int = 25): Boolean {
         if (player != null) return true
         val c = context.applicationContext
+        appCtx = c
         return try {
             val am = c.getSystemService(AudioManager::class.java)
             am.setStreamVolume(
@@ -40,6 +42,10 @@ object Siren {
                 start()
             }
             player = mp
+            try {
+                c.getSystemService(android.app.NotificationManager::class.java)
+                    .notify(13, Notif.sirenAlert(c))
+            } catch (_: Exception) {}
             main.removeCallbacks(autoStop)
             main.postDelayed(autoStop, seconds * 1000L)
             true
@@ -57,6 +63,9 @@ object Siren {
             it.release()
         }
         player = null
+        try {
+            appCtx?.getSystemService(android.app.NotificationManager::class.java)?.cancel(13)
+        } catch (_: Exception) {}
     }
 
     @Synchronized

@@ -2,7 +2,7 @@
 
 Free, offline anti-theft app for Android. No ads, no account, no internet.
 
-## What it does (v0.2)
+## What it does (v0.3)
 1. **Intruder photo** - wrong lock-screen PIN/password/pattern: front camera
    photo, stamped with date/time and reason, saved to the gallery
    (Pictures/auraXGuard). View the latest photo from the app.
@@ -12,7 +12,13 @@ Free, offline anti-theft app for Android. No ads, no account, no internet.
    wrong attempts. Stops when the owner unlocks, or after 25 seconds.
 4. **Charger pull-out alarm** (optional).
 5. **Pause** detection for 1 hour when at home.
-6. **Always-on guard** with a setup checklist and the last 25 events.
+6. **Stop the siren** - big red button in the app, a notification button that
+   needs the phone unlocked, and automatic stop when the owner unlocks.
+7. **Haath mat lagao mode** - phone on a table: any touch sets off the siren.
+8. **Privacy** - app PIN (salted hash only), hide from screenshots/recents,
+   keep intruder photos inside the app instead of the gallery, in-app photo
+   viewer with delete, wipe-all button. The app has no internet permission.
+9. **Always-on guard** with a setup checklist and the last 25 events.
 
 ## How it works
 - Uses Android *Device Admin* (`watch-login`, `force-lock`). Needed to be told

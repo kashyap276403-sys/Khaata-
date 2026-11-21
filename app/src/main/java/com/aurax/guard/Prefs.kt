@@ -46,6 +46,28 @@ object Prefs {
     fun setSnoozeUntil(c: Context, v: Long) = p(c).edit().putLong("snooze_until", v).apply()
     fun snoozed(c: Context) = System.currentTimeMillis() < snoozeUntil(c)
 
+    /** Phone lying still: any touch/movement sets off the siren. */
+    fun parkOn(c: Context) = bool(c, "park", false)
+    fun setParkOn(c: Context, v: Boolean) = setBool(c, "park", v)
+
+    /** Privacy: hide the app from screenshots and the recent-apps list. */
+    fun secureScreen(c: Context) = bool(c, "secure", true)
+    fun setSecureScreen(c: Context, v: Boolean) = setBool(c, "secure", v)
+
+    /** Privacy: false = intruder photos stay inside the app, not in the gallery. */
+    fun photosInGallery(c: Context) = bool(c, "photos_gallery", true)
+    fun setPhotosInGallery(c: Context, v: Boolean) = setBool(c, "photos_gallery", v)
+
+    /** App PIN (stored only as a salted PBKDF2 hash). */
+    fun pinHash(c: Context): String? = p(c).getString("pin_hash", null)
+    fun pinSalt(c: Context): String? = p(c).getString("pin_salt", null)
+    fun hasPin(c: Context) = pinHash(c) != null && pinSalt(c) != null
+    fun setPin(c: Context, salt: String, hash: String) =
+        p(c).edit().putString("pin_salt", salt).putString("pin_hash", hash).apply()
+    fun clearPin(c: Context) = p(c).edit().remove("pin_salt").remove("pin_hash").apply()
+
+    fun clearEvents(c: Context) = p(c).edit().remove("events").apply()
+
     fun failures(c: Context) = p(c).getInt("failures", 0)
     fun bumpFailures(c: Context): Int {
         val n = failures(c) + 1

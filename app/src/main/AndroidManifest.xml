@@ -12,7 +12,8 @@
 
     <application
         android:allowBackup="false"
-        android:icon="@android:drawable/ic_lock_lock"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:label="auraX Guard"
         android:theme="@android:style/Theme.Material.NoActionBar">
 
@@ -24,6 +25,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".PhotosActivity"
+            android:exported="false" />
+
+        <receiver
+            android:name=".SirenStopReceiver"
+            android:exported="false" />
 
         <receiver
             android:name=".GuardAdminReceiver"

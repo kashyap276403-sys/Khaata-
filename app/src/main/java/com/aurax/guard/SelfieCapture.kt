@@ -30,6 +30,9 @@ import java.util.Locale
  * time and [label] on it, and saves it to the gallery under
  * Pictures/auraXGuard. [capture] reports back exactly once.
  */
+/** One saved intruder photo. */
+data class Photo(val uri: android.net.Uri, val name: String, val timeMs: Long)
+
 class SelfieCapture(private val ctx: Context, private val label: String = "") {
     companion object {
         const val FOLDER = "Pictures/auraXGuard"
@@ -48,38 +51,58 @@ class SelfieCapture(private val ctx: Context, private val label: String = "") {
             }
         }
 
-        /** Photos in the app's gallery folder (our own files, no permission needed). */
-        fun countPhotos(ctx: Context): Int = try {
-            ctx.contentResolver.query(
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                arrayOf(MediaStore.Images.Media._ID),
-                "${MediaStore.Images.Media.RELATIVE_PATH} LIKE ?",
-                arrayOf("$FOLDER/%"),
-                null,
-            )?.use { it.count } ?: 0
-        } catch (_: Exception) {
-            0
+        /** All intruder photos (gallery folder + app-private folder), newest first. */
+        fun listPhotos(ctx: Context): List<Photo> {
+            val out = mutableListOf<Photo>()
+            try {
+                ctx.contentResolver.query(
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                    arrayOf(
+                        MediaStore.Images.Media._ID,
+                        MediaStore.Images.Media.DISPLAY_NAME,
+                        MediaStore.Images.Media.DATE_ADDED,
+                    ),
+                    "${MediaStore.Images.Media.RELATIVE_PATH} LIKE ?",
+                    arrayOf("$FOLDER/%"),
+                    null,
+                )?.use { c ->
+                    while (c.moveToNext()) {
+                        out.add(
+                            Photo(
+                                android.content.ContentUris.withAppendedId(
+                                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                                    c.getLong(0),
+                                ),
+                                c.getString(1) ?: "photo",
+                                c.getLong(2) * 1000,
+                            )
+                        )
+                    }
+                }
+            } catch (_: Exception) {
+            }
+            try {
+                privateDir(ctx).listFiles()?.forEach {
+                    out.add(Photo(android.net.Uri.fromFile(it), it.name, it.lastModified()))
+                }
+            } catch (_: Exception) {
+            }
+            return out.sortedByDescending { it.timeMs }
         }
 
-        /** Newest saved photo, or null. */
-        fun latestPhotoUri(ctx: Context): android.net.Uri? = try {
-            ctx.contentResolver.query(
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                arrayOf(MediaStore.Images.Media._ID),
-                "${MediaStore.Images.Media.RELATIVE_PATH} LIKE ?",
-                arrayOf("$FOLDER/%"),
-                "${MediaStore.Images.Media.DATE_ADDED} DESC",
-            )?.use {
-                if (it.moveToFirst()) {
-                    android.content.ContentUris.withAppendedId(
-                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                        it.getLong(0),
-                    )
-                } else null
+        fun countPhotos(ctx: Context): Int = listPhotos(ctx).size
+
+        fun deletePhoto(ctx: Context, p: Photo): Boolean = try {
+            if (p.uri.scheme == "file") {
+                java.io.File(p.uri.path!!).delete()
+            } else {
+                ctx.contentResolver.delete(p.uri, null, null) > 0
             }
         } catch (_: Exception) {
-            null
+            false
         }
+
+        fun privateDir(ctx: Context) = java.io.File(ctx.filesDir, "intruders").apply { mkdirs() }
     }
 
     private val thread = HandlerThread("selfie").apply { start() }
@@ -213,6 +236,11 @@ class SelfieCapture(private val ctx: Context, private val label: String = "") {
             val bytes = stamp(raw)
             val name = "intruder_" +
                 SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".jpg"
+            if (!Prefs.photosInGallery(ctx)) {
+                java.io.File(privateDir(ctx), name).writeBytes(bytes)
+                finish(true, "Photo app ke andar save hui (gallery me nahi): $name")
+                return
+            }
             val values = ContentValues().apply {
                 put(MediaStore.Images.Media.DISPLAY_NAME, name)
                 put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")

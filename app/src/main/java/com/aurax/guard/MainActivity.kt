@@ -2,6 +2,7 @@ package com.aurax.guard
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Intent
@@ -11,6 +12,13 @@ import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.SystemClock
+import android.text.InputType
+import android.view.WindowManager
+import android.widget.EditText
+import android.widget.FrameLayout
 import android.provider.Settings
 import android.view.Gravity
 import android.view.View
@@ -37,7 +45,21 @@ class MainActivity : Activity() {
     private lateinit var photoInfo: TextView
     private lateinit var snoozeInfo: TextView
     private lateinit var events: TextView
+    private lateinit var sirenBtn: Button
+    private lateinit var lockView: View
+    private lateinit var mainView: View
+    private lateinit var pinBtnLabel: Button
+    private lateinit var pinRemoveBtn: Button
     private val syncs = mutableListOf<() -> Unit>()
+    private val ui = Handler(Looper.getMainLooper())
+    private var pinFails = 0
+    private var pinBlockedUntil = 0L
+    private val poll = object : Runnable {
+        override fun run() {
+            sirenBtn.visibility = if (Siren.isPlaying()) View.VISIBLE else View.GONE
+            ui.postDelayed(this, 700)
+        }
+    }
 
     private val admin get() = ComponentName(this, GuardAdminReceiver::class.java)
     private val dpm get() = getSystemService(DevicePolicyManager::class.java)
@@ -61,6 +83,13 @@ class MainActivity : Activity() {
         hero.addView(statusTitle)
         hero.addView(statusSub)
         hero.addView(toggle("Suraksha chalu", { Prefs.guardOn(this) }) { on -> setGuard(on) })
+        sirenBtn = button("SIREN BAND KAREIN", danger = true) {
+            Siren.stop()
+            Prefs.log(this, "App se siren band ki")
+            refresh()
+        }
+        sirenBtn.visibility = View.GONE
+        hero.addView(sirenBtn)
         root.addView(hero)
 
         // ---- setup checklist ----
@@ -100,7 +129,9 @@ class MainActivity : Activity() {
         pw.addView(button("Photo ka test karein") { testSelfie() })
         photoInfo = label("", 13f, dim = true)
         pw.addView(photoInfo)
-        pw.addView(button("Aakhri photo dekhein") { openLatestPhoto() })
+        pw.addView(button("Photos dekhein / mitayein") {
+            startActivity(Intent(this, PhotosActivity::class.java))
+        })
         root.addView(pw)
 
         // ---- snatch / charger / siren ----
@@ -124,6 +155,36 @@ class MainActivity : Activity() {
             if (Siren.isPlaying()) Siren.stop() else Siren.start(this, 10)
         })
         root.addView(sn)
+
+        // ---- park mode ----
+        val pk = card()
+        pk.addView(title("Haath mat lagao mode"))
+        pk.addView(label("Phone mez par rakh kar chalu karein. 10 second baad kisi ne uthaya ya hilaya to siren baje aur screen lock ho.", 13f, dim = true))
+        pk.addView(toggle("Haath mat lagao mode", { Prefs.parkOn(this) }) { on ->
+            Prefs.setParkOn(this, on)
+            if (on && !Prefs.guardOn(this)) setGuard(true) else restartGuardIfOn()
+            if (on) Toast.makeText(this, "10 second baad active hoga", Toast.LENGTH_LONG).show()
+        })
+        root.addView(pk)
+
+        // ---- privacy ----
+        val pv = card()
+        pv.addView(title("Privacy"))
+        pv.addView(label("Ye app internet use hi nahi karti. Photos aur settings sirf aapke phone me rehti hain.", 13f, dim = true))
+        pinBtnLabel = button("") { setOrChangePin() }
+        pv.addView(pinBtnLabel)
+        pinRemoveBtn = button("App PIN hatayein") { removePin() }
+        pv.addView(pinRemoveBtn)
+        pv.addView(toggle("Screenshot aur recent apps me chhupao", { Prefs.secureScreen(this) }) {
+            Prefs.setSecureScreen(this, it)
+            applySecure()
+        })
+        pv.addView(toggle("Photos gallery me dikhao", { Prefs.photosInGallery(this) }) {
+            Prefs.setPhotosInGallery(this, it)
+        })
+        pv.addView(label("Band karne par nayi photos sirf is app ke andar rahengi (gallery me nahi dikhengi).", 12f, dim = true))
+        pv.addView(button("Sab photos aur ghatnayein mitayein", danger = true) { confirmWipe() })
+        root.addView(pv)
 
         // ---- snooze ----
         val sz = card()
@@ -151,18 +212,161 @@ class MainActivity : Activity() {
             )
         )
 
-        setContentView(ScrollView(this).apply {
+        mainView = ScrollView(this).apply {
             background = GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
                 intArrayOf(Color.rgb(4, 38, 28), Color.BLACK, Color.BLACK),
             )
             isFillViewport = true
             addView(root)
+        }
+        lockView = buildLock()
+        setContentView(FrameLayout(this).apply {
+            addView(mainView)
+            addView(lockView)
         })
+    }
+
+    /** PIN screen shown instead of the app while the app PIN has not been entered. */
+    private fun buildLock(): View {
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(32), dp(32), dp(32), dp(32))
+            background = GradientDrawable(
+                GradientDrawable.Orientation.TOP_BOTTOM,
+                intArrayOf(Color.rgb(4, 38, 28), Color.BLACK),
+            )
+            isClickable = true
+        }
+        box.addView(label("auraX Guard", 28f, bold = true))
+        box.addView(label("App PIN daalein", 15f, dim = true))
+        val pin = EditText(this).apply {
+            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD
+            setTextColor(Color.WHITE)
+            gravity = Gravity.CENTER
+            textSize = 24f
+            hint = "••••"
+            setHintTextColor(Color.argb(90, 255, 255, 255))
+        }
+        val err = label("", 13f).apply { setTextColor(red) }
+        box.addView(pin)
+        box.addView(err)
+        box.addView(button("Kholein") {
+            val now = SystemClock.elapsedRealtime()
+            if (now < pinBlockedUntil) {
+                err.text = "Bahut galat koshish. ${(pinBlockedUntil - now) / 1000 + 1} second ruko."
+                return@button
+            }
+            val salt = Prefs.pinSalt(this)
+            val hash = Prefs.pinHash(this)
+            if (salt != null && hash != null && PinHasher.verify(pin.text.toString(), salt, hash)) {
+                pinFails = 0
+                err.text = ""
+                pin.text.clear()
+                Gate.open()
+                showGate()
+                refresh()
+            } else {
+                pinFails++
+                pin.text.clear()
+                if (pinFails >= 5) {
+                    pinFails = 0
+                    pinBlockedUntil = now + 30_000
+                    err.text = "5 galat PIN. 30 second ruko."
+                } else {
+                    err.text = "Galat PIN"
+                }
+            }
+        })
+        return box
+    }
+
+    private fun showGate() {
+        val open = Gate.isOpen(this)
+        lockView.visibility = if (open) View.GONE else View.VISIBLE
+        mainView.visibility = if (open) View.VISIBLE else View.GONE
+    }
+
+    private fun applySecure() {
+        if (Prefs.secureScreen(this)) {
+            window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
+        } else {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        }
+    }
+
+    private fun askPin(titleText: String, onPin: (String) -> Unit) {
+        val input = EditText(this).apply {
+            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD
+            gravity = Gravity.CENTER
+            textSize = 22f
+        }
+        AlertDialog.Builder(this)
+            .setTitle(titleText)
+            .setView(input)
+            .setPositiveButton("Theek hai") { _, _ -> onPin(input.text.toString()) }
+            .setNegativeButton("Radd", null)
+            .show()
+    }
+
+    private fun setOrChangePin() {
+        askPin("Naya PIN (4 se 8 ank)") { first ->
+            if (!PinHasher.isValidPin(first)) {
+                Toast.makeText(this, "PIN 4 se 8 ank ka hona chahiye", Toast.LENGTH_LONG).show()
+                return@askPin
+            }
+            askPin("PIN dobara daalein") { second ->
+                if (first != second) {
+                    Toast.makeText(this, "PIN match nahi hua", Toast.LENGTH_LONG).show()
+                } else {
+                    val salt = PinHasher.newSalt()
+                    Prefs.setPin(this, salt, PinHasher.hash(first, salt))
+                    Gate.open()
+                    Prefs.log(this, "App PIN set kiya")
+                    refresh()
+                }
+            }
+        }
+    }
+
+    private fun removePin() {
+        askPin("Abhi ka PIN daalein") { pin ->
+            val salt = Prefs.pinSalt(this)
+            val hash = Prefs.pinHash(this)
+            if (salt != null && hash != null && PinHasher.verify(pin, salt, hash)) {
+                Prefs.clearPin(this)
+                Prefs.log(this, "App PIN hata diya")
+                refresh()
+            } else {
+                Toast.makeText(this, "Galat PIN", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun confirmWipe() {
+        AlertDialog.Builder(this)
+            .setMessage("Saari intruder photos aur ghatnayein hamesha ke liye mit jayengi. Mitayein?")
+            .setPositiveButton("Mitayein") { _, _ ->
+                SelfieCapture.listPhotos(this).forEach { SelfieCapture.deletePhoto(this, it) }
+                Prefs.clearEvents(this)
+                Toast.makeText(this, "Sab mita diya", Toast.LENGTH_SHORT).show()
+                refresh()
+            }
+            .setNegativeButton("Rehne dein", null)
+            .show()
+    }
+
+    override fun onPause() {
+        ui.removeCallbacks(poll)
+        super.onPause()
     }
 
     override fun onResume() {
         super.onResume()
+        applySecure()
+        showGate()
+        ui.post(poll)
         // The service may have been killed while the switch said "on".
         if (Prefs.guardOn(this) && GuardService.instance == null) {
             try { GuardService.start(this, true) } catch (_: Exception) {}
@@ -196,6 +400,8 @@ class MainActivity : Activity() {
         } else {
             "Detection chalu hai."
         }
+        pinBtnLabel.text = if (Prefs.hasPin(this)) "App PIN badlein" else "App PIN lagayein (app kholne ke liye)"
+        pinRemoveBtn.visibility = if (Prefs.hasPin(this)) View.VISIBLE else View.GONE
         events.text = Prefs.events(this).take(8).joinToString("\n").ifBlank { "Abhi kuch nahi hua" }
     }
 
@@ -259,23 +465,6 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun openLatestPhoto() {
-        val uri = SelfieCapture.latestPhotoUri(this)
-        if (uri == null) {
-            Toast.makeText(this, "Abhi koi photo nahi hai", Toast.LENGTH_SHORT).show()
-            return
-        }
-        try {
-            startActivity(
-                Intent(Intent.ACTION_VIEW)
-                    .setDataAndType(uri, "image/jpeg")
-                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            )
-        } catch (e: Exception) {
-            Toast.makeText(this, "Gallery nahi khuli", Toast.LENGTH_SHORT).show()
-        }
-    }
-
     // ---- small view helpers (no XML layouts, keeps the build simple) ----
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
 
@@ -305,13 +494,13 @@ class MainActivity : Activity() {
         ).apply { topMargin = dp(14) }
     }
 
-    private fun button(text: String, onClick: () -> Unit) = Button(this).apply {
+    private fun button(text: String, danger: Boolean = false, onClick: () -> Unit) = Button(this).apply {
         this.text = text
         isAllCaps = false
         setTextColor(Color.WHITE)
         background = GradientDrawable().apply {
             cornerRadius = dp(14).toFloat()
-            setColor(Color.argb(70, 80, 220, 160))
+            setColor(if (danger) Color.argb(120, 255, 90, 90) else Color.argb(70, 80, 220, 160))
         }
         setOnClickListener { onClick() }
         layoutParams = LinearLayout.LayoutParams(

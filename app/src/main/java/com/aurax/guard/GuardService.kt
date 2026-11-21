@@ -47,6 +47,7 @@ class GuardService : Service(), SensorEventListener {
     private var detector: SnatchDetector? = null
     private val gravity = FloatArray(3)
     private var usingLinear = false
+    private var motionReason = "Jhatka pakda gaya"
     private var chargerReceiver: BroadcastReceiver? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -61,7 +62,7 @@ class GuardService : Service(), SensorEventListener {
         sensors.unregisterListener(this)
         unregisterCharger()
 
-        if (Prefs.snatchLockOn(this)) startMotion()
+        if (Prefs.snatchLockOn(this) || Prefs.parkOn(this)) startMotion()
         if (Prefs.chargerAlarmOn(this)) registerCharger()
         Prefs.log(
             this,
@@ -91,11 +92,14 @@ class GuardService : Service(), SensorEventListener {
     }
 
     private fun startMotion() {
+        val park = Prefs.parkOn(this)
+        motionReason = if (park) "Phone ko haath lagaya gaya" else "Jhatka pakda gaya"
         detector = SnatchDetector(
-            threshold = Prefs.snatchThresholds[Prefs.sensitivity(this)],
-            armDelayMs = 5_000,
+            threshold = if (park) 3f else Prefs.snatchThresholds[Prefs.sensitivity(this)],
+            armDelayMs = if (park) 10_000 else 5_000,
             cooldownMs = 8_000,
             startMs = SystemClock.elapsedRealtime(),
+            minSamples = if (park) 2 else 3,
         )
         val linear = sensors.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
         val sensor = linear ?: sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
@@ -139,7 +143,7 @@ class GuardService : Service(), SensorEventListener {
         }
         if (Prefs.snoozed(this)) return
         if (detector?.onSample(mag, SystemClock.elapsedRealtime()) == true) {
-            trigger("Jhatka pakda gaya")
+            trigger(motionReason)
         }
     }
 
