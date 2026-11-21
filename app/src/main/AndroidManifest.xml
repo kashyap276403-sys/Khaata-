@@ -43,9 +43,9 @@
             android:foregroundServiceType="camera" />
 
         <service
-            android:name=".SnatchService"
+            android:name=".GuardService"
             android:exported="false"
-            android:foregroundServiceType="specialUse">
+            android:foregroundServiceType="specialUse|camera">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="anti_theft_motion_detection" />

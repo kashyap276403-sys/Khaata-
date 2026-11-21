@@ -19,9 +19,9 @@ class SelfieService : Service() {
         } catch (e: Exception) {
             Prefs.log(this, "Foreground start nahi hua: ${e.message}")
         }
-        SelfieCapture(this).capture { ok, msg ->
+        val label = intent?.getStringExtra("label") ?: ""
+        SelfieCapture.run(this, label) { ok, msg ->
             Prefs.log(this, msg)
-            if (ok) Prefs.addPhoto(this)
             stopSelf()
         }
         return START_NOT_STICKY

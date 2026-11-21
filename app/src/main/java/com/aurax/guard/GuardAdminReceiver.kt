@@ -1,6 +1,7 @@
 package com.aurax.guard
 
 import android.app.admin.DeviceAdminReceiver
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 
@@ -13,22 +14,39 @@ class GuardAdminReceiver : DeviceAdminReceiver() {
 
     @Deprecated("Android still calls this for wrong lock-screen attempts")
     override fun onPasswordFailed(context: Context, intent: Intent) {
-        if (!Prefs.selfieOn(context)) return
         val n = Prefs.bumpFailures(context)
+        if (Prefs.sirenOn(context) && n >= 3 && !Prefs.snoozed(context)) {
+            Siren.start(context)
+            Prefs.log(context, "3 galat koshish: siren chalu")
+        }
+        if (!Prefs.selfieOn(context)) return
         if (n < Prefs.attemptsBeforePhoto(context)) return
-        Prefs.log(context, "Galat password ($n). Photo li ja rahi hai...")
+        val label = "Galat password #$n"
+        Prefs.log(context, "$label. Photo li ja rahi hai...")
 
         val pending = goAsync()
+        // 1) Best: the always-on guard already holds camera access.
+        val svc = GuardService.instance
+        if (svc != null && GuardService.cameraCapable) {
+            svc.takeSelfie(label) { ok ->
+                if (ok) pending.finish() else fallback(context, label, pending)
+            }
+        } else {
+            fallback(context, label, pending)
+        }
+    }
+
+    /** 2) Start a short camera service; 3) if Android refuses, use camera directly. */
+    private fun fallback(context: Context, label: String, pending: BroadcastReceiver.PendingResult) {
         try {
-            context.startForegroundService(Intent(context, SelfieService::class.java))
+            context.startForegroundService(
+                Intent(context, SelfieService::class.java).putExtra("label", label)
+            )
             pending.finish()
         } catch (e: Exception) {
-            // Android may refuse a background foreground-service start. Try the
-            // camera directly while this broadcast is still alive.
             Prefs.log(context, "Service start nahi hui (${e.javaClass.simpleName}), seedha camera try")
-            SelfieCapture(context).capture { ok, msg ->
+            SelfieCapture.run(context, label) { _, msg ->
                 Prefs.log(context, msg)
-                if (ok) Prefs.addPhoto(context)
                 pending.finish()
             }
         }
@@ -36,5 +54,9 @@ class GuardAdminReceiver : DeviceAdminReceiver() {
 
     override fun onPasswordSucceeded(context: Context, intent: Intent) {
         Prefs.resetFailures(context)
+        if (Siren.isPlaying()) {
+            Siren.stop()
+            Prefs.log(context, "Owner ne unlock kiya: siren band")
+        }
     }
 }

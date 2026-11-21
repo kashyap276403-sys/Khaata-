@@ -4,7 +4,13 @@ import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.ImageFormat
+import android.graphics.Matrix
+import android.graphics.Paint
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
@@ -14,15 +20,68 @@ import android.media.ImageReader
 import android.os.Handler
 import android.os.HandlerThread
 import android.provider.MediaStore
+import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 /**
- * Takes ONE photo with the front camera (no preview on screen) and saves it to
- * the gallery under Pictures/auraXGuard. [capture] reports back exactly once.
+ * Takes ONE photo with the front camera (no preview on screen), stamps the
+ * time and [label] on it, and saves it to the gallery under
+ * Pictures/auraXGuard. [capture] reports back exactly once.
  */
-class SelfieCapture(private val ctx: Context) {
+class SelfieCapture(private val ctx: Context, private val label: String = "") {
+    companion object {
+        const val FOLDER = "Pictures/auraXGuard"
+
+        /** Same as [capture] but tries once more if the camera was busy or slow. */
+        fun run(ctx: Context, label: String, onDone: (Boolean, String) -> Unit) {
+            SelfieCapture(ctx, label).capture { ok, msg ->
+                if (ok || msg.contains("permission", ignoreCase = true)) {
+                    onDone(ok, msg)
+                } else {
+                    Prefs.log(ctx, "Pehli koshish fail ($msg). Dobara try...")
+                    Handler(android.os.Looper.getMainLooper()).postDelayed({
+                        SelfieCapture(ctx, label).capture(onDone)
+                    }, 800)
+                }
+            }
+        }
+
+        /** Photos in the app's gallery folder (our own files, no permission needed). */
+        fun countPhotos(ctx: Context): Int = try {
+            ctx.contentResolver.query(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                arrayOf(MediaStore.Images.Media._ID),
+                "${MediaStore.Images.Media.RELATIVE_PATH} LIKE ?",
+                arrayOf("$FOLDER/%"),
+                null,
+            )?.use { it.count } ?: 0
+        } catch (_: Exception) {
+            0
+        }
+
+        /** Newest saved photo, or null. */
+        fun latestPhotoUri(ctx: Context): android.net.Uri? = try {
+            ctx.contentResolver.query(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                arrayOf(MediaStore.Images.Media._ID),
+                "${MediaStore.Images.Media.RELATIVE_PATH} LIKE ?",
+                arrayOf("$FOLDER/%"),
+                "${MediaStore.Images.Media.DATE_ADDED} DESC",
+            )?.use {
+                if (it.moveToFirst()) {
+                    android.content.ContentUris.withAppendedId(
+                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                        it.getLong(0),
+                    )
+                } else null
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     private val thread = HandlerThread("selfie").apply { start() }
     private val handler = Handler(thread.looper)
 
@@ -134,8 +193,7 @@ class SelfieCapture(private val ctx: Context) {
         try {
             val req = cam.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE).apply {
                 addTarget(jpeg)
-                set(CaptureRequest.JPEG_ORIENTATION, sensorOrientation)
-                set(CaptureRequest.JPEG_QUALITY, 85.toByte())
+                set(CaptureRequest.JPEG_QUALITY, 90.toByte())
             }
             s.capture(req.build(), null, handler)
         } catch (e: Exception) {
@@ -145,19 +203,20 @@ class SelfieCapture(private val ctx: Context) {
 
     private fun onJpeg(reader: ImageReader) {
         val image = reader.acquireLatestImage() ?: return
-        val bytes = try {
+        val raw = try {
             val buf = image.planes[0].buffer
             ByteArray(buf.remaining()).also { buf.get(it) }
         } finally {
             image.close()
         }
         try {
+            val bytes = stamp(raw)
             val name = "intruder_" +
                 SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".jpg"
             val values = ContentValues().apply {
                 put(MediaStore.Images.Media.DISPLAY_NAME, name)
                 put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-                put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/auraXGuard")
+                put(MediaStore.Images.Media.RELATIVE_PATH, FOLDER)
                 put(MediaStore.Images.Media.IS_PENDING, 1)
             }
             val resolver = ctx.contentResolver
@@ -170,10 +229,41 @@ class SelfieCapture(private val ctx: Context) {
             values.clear()
             values.put(MediaStore.Images.Media.IS_PENDING, 0)
             resolver.update(uri, values, null, null)
-            finish(true, "Photo gallery me save hui: Pictures/auraXGuard/$name")
+            finish(true, "Photo gallery me save hui: $FOLDER/$name")
         } catch (e: Exception) {
             finish(false, "Save error: ${e.message}")
         }
+    }
+
+    /** Turns the photo upright and prints date, time and reason on it. */
+    private fun stamp(jpeg: ByteArray): ByteArray {
+        val src = BitmapFactory.decodeByteArray(jpeg, 0, jpeg.size) ?: return jpeg
+        val m = Matrix().apply { postRotate(sensorOrientation.toFloat()) }
+        val upright = Bitmap.createBitmap(src, 0, 0, src.width, src.height, m, true)
+        val out = upright.copy(Bitmap.Config.ARGB_8888, true)
+        val canvas = Canvas(out)
+        val size = out.width / 22f
+        val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            textSize = size
+        }
+        val edge = Paint(fill).apply {
+            color = Color.BLACK
+            style = Paint.Style.STROKE
+            strokeWidth = size / 6f
+        }
+        val time = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.US).format(Date())
+        val lines = listOfNotNull(time, label.ifBlank { null })
+        var y = out.height - size * 0.6f - (lines.size - 1) * size * 1.2f
+        for (l in lines) {
+            canvas.drawText(l, size / 2f, y, edge)
+            canvas.drawText(l, size / 2f, y, fill)
+            y += size * 1.2f
+        }
+        val bos = ByteArrayOutputStream()
+        out.compress(Bitmap.CompressFormat.JPEG, 90, bos)
+        if (upright !== src) src.recycle()
+        return bos.toByteArray()
     }
 
     @Synchronized

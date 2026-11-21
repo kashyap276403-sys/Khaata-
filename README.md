@@ -2,12 +2,17 @@
 
 Free, offline anti-theft app for Android. No ads, no account, no internet.
 
-## What it does (v0.1)
-1. **Intruder photo** - someone enters a wrong lock-screen PIN/password/pattern:
-   the front camera takes a photo and saves it to the gallery
-   (Pictures/auraXGuard).
-2. **Snatch lock** - if the phone is jerked away hard, the screen locks at once.
-   Sensitivity can be changed.
+## What it does (v0.2)
+1. **Intruder photo** - wrong lock-screen PIN/password/pattern: front camera
+   photo, stamped with date/time and reason, saved to the gallery
+   (Pictures/auraXGuard). View the latest photo from the app.
+2. **Snatch lock** - a hard sustained jerk locks the screen (a single bump is
+   ignored). Sensitivity: Zyada / Madhyam / Kam.
+3. **Siren** - loud alarm (even on silent) on snatch, charger pull-out, or 3
+   wrong attempts. Stops when the owner unlocks, or after 25 seconds.
+4. **Charger pull-out alarm** (optional).
+5. **Pause** detection for 1 hour when at home.
+6. **Always-on guard** with a setup checklist and the last 25 events.
 
 ## How it works
 - Uses Android *Device Admin* (`watch-login`, `force-lock`). Needed to be told
