@@ -11,7 +11,9 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
+import android.hardware.biometrics.BiometricPrompt
 import android.os.Bundle
+import android.os.CancellationSignal
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
@@ -52,6 +54,7 @@ class MainActivity : Activity() {
     private lateinit var pinRemoveBtn: Button
     private val syncs = mutableListOf<() -> Unit>()
     private val ui = Handler(Looper.getMainLooper())
+    private lateinit var bioBtn: Button
     private var pinFails = 0
     private var pinBlockedUntil = 0L
     private val poll = object : Runnable {
@@ -151,6 +154,7 @@ class MainActivity : Activity() {
             restartGuardIfOn()
         })
         sn.addView(toggle("Siren bajao", { Prefs.sirenOn(this) }) { Prefs.setSirenOn(this, it) })
+        sn.addView(toggle("Siren ke saath torch aur vibration", { Prefs.sirenFlash(this) }) { Prefs.setSirenFlash(this, it) })
         sn.addView(button("Siren test (dobara dabane par band)") {
             if (Siren.isPlaying()) Siren.stop() else Siren.start(this, 10)
         })
@@ -183,6 +187,25 @@ class MainActivity : Activity() {
             Prefs.setPhotosInGallery(this, it)
         })
         pv.addView(label("Band karne par nayi photos sirf is app ke andar rahengi (gallery me nahi dikhengi).", 12f, dim = true))
+        pv.addView(label("Photos app ke andar encrypted (AES-256) rehti hain.", 12f, dim = true))
+        pv.addView(label("App PIN ke baad kitni der khula rahe (minute)?", 13f, dim = true))
+        val graceOpts = intArrayOf(1, 5, 15)
+        pv.addView(radios(arrayOf("1", "5", "15"), graceOpts.indexOf(Prefs.lockGraceMin(this)).coerceAtLeast(0)) {
+            Prefs.setLockGraceMin(this, graceOpts[it])
+        })
+        pv.addView(toggle("PIN ke saath fingerprint se bhi kholein", { Prefs.bioOn(this) }) {
+            if (it && !Prefs.hasPin(this)) {
+                Toast.makeText(this, "Pehle App PIN lagayein", Toast.LENGTH_LONG).show()
+            }
+            Prefs.setBioOn(this, it)
+        })
+        pv.addView(label("Purani photos apne aap mitayein:", 13f, dim = true))
+        val retOpts = intArrayOf(0, 7, 30)
+        pv.addView(radios(arrayOf("Kabhi nahi", "7 din", "30 din"), retOpts.indexOf(Prefs.retentionDays(this)).coerceAtLeast(0)) {
+            Prefs.setRetentionDays(this, retOpts[it])
+            SelfieCapture.purgeOld(this, retOpts[it])
+            refresh()
+        })
         pv.addView(button("Sab photos aur ghatnayein mitayein", danger = true) { confirmWipe() })
         root.addView(pv)
 
@@ -264,12 +287,16 @@ class MainActivity : Activity() {
                 pinFails = 0
                 err.text = ""
                 pin.text.clear()
-                Gate.open()
+                Gate.open(this)
                 showGate()
                 refresh()
             } else {
                 pinFails++
                 pin.text.clear()
+                Prefs.log(this, "Galat App PIN ($pinFails)")
+                if (pinFails == 3 && Prefs.selfieOn(this) && hasCamera()) {
+                    SelfieCapture.run(this, "Galat App PIN") { _, msg -> Prefs.log(this, msg) }
+                }
                 if (pinFails >= 5) {
                     pinFails = 0
                     pinBlockedUntil = now + 30_000
@@ -279,13 +306,38 @@ class MainActivity : Activity() {
                 }
             }
         })
+        bioBtn = button("Fingerprint se kholein") { tryBiometric() }
+        box.addView(bioBtn)
         return box
+    }
+
+    private fun tryBiometric() {
+        try {
+            val prompt = BiometricPrompt.Builder(this)
+                .setTitle("auraX Guard kholein")
+                .setNegativeButton("PIN use karein", mainExecutor) { _, _ -> }
+                .build()
+            prompt.authenticate(
+                CancellationSignal(),
+                mainExecutor,
+                object : BiometricPrompt.AuthenticationCallback() {
+                    override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult?) {
+                        Gate.open(this@MainActivity)
+                        showGate()
+                        refresh()
+                    }
+                },
+            )
+        } catch (e: Exception) {
+            Prefs.log(this, "Fingerprint nahi chali: ${e.message}")
+        }
     }
 
     private fun showGate() {
         val open = Gate.isOpen(this)
         lockView.visibility = if (open) View.GONE else View.VISIBLE
         mainView.visibility = if (open) View.VISIBLE else View.GONE
+        bioBtn.visibility = if (Prefs.bioOn(this)) View.VISIBLE else View.GONE
     }
 
     private fun applySecure() {
@@ -322,7 +374,7 @@ class MainActivity : Activity() {
                 } else {
                     val salt = PinHasher.newSalt()
                     Prefs.setPin(this, salt, PinHasher.hash(first, salt))
-                    Gate.open()
+                    Gate.open(this)
                     Prefs.log(this, "App PIN set kiya")
                     refresh()
                 }
@@ -367,6 +419,8 @@ class MainActivity : Activity() {
         applySecure()
         showGate()
         ui.post(poll)
+        SelfieCapture.purgeOld(this, Prefs.retentionDays(this))
+        if (!Gate.isOpen(this) && Prefs.bioOn(this)) tryBiometric()
         // The service may have been killed while the switch said "on".
         if (Prefs.guardOn(this) && GuardService.instance == null) {
             try { GuardService.start(this, true) } catch (_: Exception) {}

@@ -62,6 +62,7 @@ class GuardService : Service(), SensorEventListener {
         sensors.unregisterListener(this)
         unregisterCharger()
 
+        SelfieCapture.purgeOld(this, Prefs.retentionDays(this))
         if (Prefs.snatchLockOn(this) || Prefs.parkOn(this)) startMotion()
         if (Prefs.chargerAlarmOn(this)) registerCharger()
         Prefs.log(

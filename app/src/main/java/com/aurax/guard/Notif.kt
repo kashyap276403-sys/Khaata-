@@ -15,13 +15,16 @@ object Notif {
     fun build(c: Context, text: String): Notification {
         val nm = c.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
-            NotificationChannel(CHANNEL, "auraX Guard", NotificationManager.IMPORTANCE_LOW)
+            NotificationChannel(CHANNEL, "auraX Guard", NotificationManager.IMPORTANCE_LOW).apply {
+                lockscreenVisibility = Notification.VISIBILITY_SECRET
+            }
         )
         return Notification.Builder(c, CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_guard)
             .setContentTitle("auraX Guard")
             .setContentText(text)
             .setOngoing(true)
+            .setVisibility(Notification.VISIBILITY_SECRET)
             .build()
     }
 

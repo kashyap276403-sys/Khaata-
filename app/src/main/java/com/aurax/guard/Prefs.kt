@@ -66,6 +66,22 @@ object Prefs {
         p(c).edit().putString("pin_salt", salt).putString("pin_hash", hash).apply()
     fun clearPin(c: Context) = p(c).edit().remove("pin_salt").remove("pin_hash").apply()
 
+    /** Delete intruder photos older than this many days (0 = keep until deleted by hand). */
+    fun retentionDays(c: Context) = p(c).getInt("retention_days", 0)
+    fun setRetentionDays(c: Context, v: Int) = p(c).edit().putInt("retention_days", v).apply()
+
+    /** Minutes the app stays unlocked after the PIN was entered. */
+    fun lockGraceMin(c: Context) = p(c).getInt("lock_grace_min", 5)
+    fun setLockGraceMin(c: Context, v: Int) = p(c).edit().putInt("lock_grace_min", v).apply()
+
+    /** Open the app with a fingerprint as well as the PIN. */
+    fun bioOn(c: Context) = bool(c, "bio", false)
+    fun setBioOn(c: Context, v: Boolean) = setBool(c, "bio", v)
+
+    /** Torch strobe + vibration while the siren sounds. */
+    fun sirenFlash(c: Context) = bool(c, "siren_flash", true)
+    fun setSirenFlash(c: Context, v: Boolean) = setBool(c, "siren_flash", v)
+
     fun clearEvents(c: Context) = p(c).edit().remove("events").apply()
 
     fun failures(c: Context) = p(c).getInt("failures", 0)

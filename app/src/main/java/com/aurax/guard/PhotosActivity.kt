@@ -6,10 +6,13 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Typeface
+import android.content.Intent
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.WindowManager
 import android.widget.Button
+import android.widget.Toast
+import androidx.core.content.FileProvider
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -103,6 +106,16 @@ class PhotosActivity : Activity() {
             setPadding(0, dp(8), 0, dp(4))
         })
         card.addView(Button(this).apply {
+            text = "Photo bhejein (aap chunenge kisko)"
+            isAllCaps = false
+            setTextColor(Color.WHITE)
+            background = GradientDrawable().apply {
+                cornerRadius = dp(14).toFloat()
+                setColor(Color.argb(70, 80, 220, 160))
+            }
+            setOnClickListener { share(p) }
+        })
+        card.addView(Button(this).apply {
             text = "Ye photo mitayein"
             isAllCaps = false
             setTextColor(Color.WHITE)
@@ -119,12 +132,52 @@ class PhotosActivity : Activity() {
         return card
     }
 
-    private fun decode(p: Photo): Bitmap? = try {
-        contentResolver.openInputStream(p.uri)?.use {
-            BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = 2 })
-        }
+    /** Photo bytes, decrypted if the photo is stored encrypted. */
+    private fun bytes(p: Photo): ByteArray? = try {
+        val raw = contentResolver.openInputStream(p.uri)?.use { it.readBytes() }
+        if (raw != null && p.encrypted) PhotoCrypto.decrypt(PhotoCrypto.keystoreKey(), raw) else raw
     } catch (_: Exception) {
         null
+    }
+
+    private fun decode(p: Photo): Bitmap? {
+        val b = bytes(p) ?: return null
+        return BitmapFactory.decodeByteArray(b, 0, b.size, BitmapFactory.Options().apply { inSampleSize = 2 })
+    }
+
+    /** Hands the photo to a chosen app (WhatsApp, police mail...). Only on the owner's tap. */
+    private fun share(p: Photo) {
+        val b = bytes(p)
+        if (b == null) {
+            Toast.makeText(this, "Photo padh nahi paya", Toast.LENGTH_SHORT).show()
+            return
+        }
+        try {
+            val dir = java.io.File(cacheDir, "shared").apply { mkdirs() }
+            dir.listFiles()?.forEach { it.delete() }
+            val f = java.io.File(dir, "intruder_" + p.timeMs + ".jpg")
+            f.writeBytes(b)
+            val uri = FileProvider.getUriForFile(this, "com.aurax.guard.files", f)
+            startActivity(
+                Intent.createChooser(
+                    Intent(Intent.ACTION_SEND)
+                        .setType("image/jpeg")
+                        .putExtra(Intent.EXTRA_STREAM, uri)
+                        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION),
+                    "Photo bhejein",
+                )
+            )
+        } catch (e: Exception) {
+            Toast.makeText(this, "Share nahi hua: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    override fun onDestroy() {
+        try {
+            java.io.File(cacheDir, "shared").listFiles()?.forEach { it.delete() }
+        } catch (_: Exception) {
+        }
+        super.onDestroy()
     }
 
     private fun confirmDelete(p: Photo) {

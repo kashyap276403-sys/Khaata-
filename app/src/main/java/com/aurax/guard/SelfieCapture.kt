@@ -31,7 +31,12 @@ import java.util.Locale
  * Pictures/auraXGuard. [capture] reports back exactly once.
  */
 /** One saved intruder photo. */
-data class Photo(val uri: android.net.Uri, val name: String, val timeMs: Long)
+data class Photo(
+    val uri: android.net.Uri,
+    val name: String,
+    val timeMs: Long,
+    val encrypted: Boolean = false,
+)
 
 class SelfieCapture(private val ctx: Context, private val label: String = "") {
     companion object {
@@ -83,11 +88,30 @@ class SelfieCapture(private val ctx: Context, private val label: String = "") {
             }
             try {
                 privateDir(ctx).listFiles()?.forEach {
-                    out.add(Photo(android.net.Uri.fromFile(it), it.name, it.lastModified()))
+                    out.add(
+                        Photo(
+                            android.net.Uri.fromFile(it),
+                            it.name,
+                            it.lastModified(),
+                            it.name.endsWith(".enc"),
+                        )
+                    )
                 }
             } catch (_: Exception) {
             }
             return out.sortedByDescending { it.timeMs }
+        }
+
+        /** Deletes photos older than [days] days. Returns how many were removed. */
+        fun purgeOld(ctx: Context, days: Int): Int {
+            if (days <= 0) return 0
+            val limit = System.currentTimeMillis() - days * 86_400_000L
+            var n = 0
+            for (p in listPhotos(ctx)) {
+                if (p.timeMs < limit && deletePhoto(ctx, p)) n++
+            }
+            if (n > 0) Prefs.log(ctx, "$n purani photo apne aap mita di ($days din se purani)")
+            return n
         }
 
         fun countPhotos(ctx: Context): Int = listPhotos(ctx).size
@@ -237,8 +261,9 @@ class SelfieCapture(private val ctx: Context, private val label: String = "") {
             val name = "intruder_" +
                 SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".jpg"
             if (!Prefs.photosInGallery(ctx)) {
-                java.io.File(privateDir(ctx), name).writeBytes(bytes)
-                finish(true, "Photo app ke andar save hui (gallery me nahi): $name")
+                java.io.File(privateDir(ctx), "$name.enc")
+                    .writeBytes(PhotoCrypto.encrypt(PhotoCrypto.keystoreKey(), bytes))
+                finish(true, "Photo encrypt karke app ke andar save hui (gallery me nahi): $name")
                 return
             }
             val values = ContentValues().apply {
