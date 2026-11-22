@@ -19,9 +19,14 @@ class GuardAdminReceiver : DeviceAdminReceiver() {
             Siren.start(context)
             Prefs.log(context, "3 galat koshish: siren chalu")
         }
-        if (!Prefs.selfieOn(context)) return
         if (n < Prefs.attemptsBeforePhoto(context)) return
         val label = "Galat password #$n"
+        if (!Prefs.selfieOn(context)) {
+            EventRecorder.trigger(context, label, label, EventRecorder.PhotoMode.NONE)
+            return
+        }
+        // Record GPS/battery/network and pick up the photo that the chain below takes.
+        EventRecorder.trigger(context, label, label, EventRecorder.PhotoMode.WAIT_FOR_EXTERNAL)
         Prefs.log(context, "$label. Photo li ja rahi hai...")
 
         val pending = goAsync()

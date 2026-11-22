@@ -44,6 +44,9 @@ class MainActivity : Activity() {
     private lateinit var adminRow: TextView
     private lateinit var cameraRow: TextView
     private lateinit var notifRow: TextView
+    private lateinit var locRow: TextView
+    private lateinit var queueInfo: TextView
+    private lateinit var testBtn: Button
     private lateinit var photoInfo: TextView
     private lateinit var snoozeInfo: TextView
     private lateinit var events: TextView
@@ -85,7 +88,9 @@ class MainActivity : Activity() {
         statusSub = label("", 13f, dim = true)
         hero.addView(statusTitle)
         hero.addView(statusSub)
-        hero.addView(toggle("Suraksha chalu", { Prefs.guardOn(this) }) { on -> setGuard(on) })
+        hero.addView(toggle("Smart Protection", { Prefs.guardOn(this) }) { on -> setGuard(on) })
+        testBtn = button("Test Trigger (photo + GPS + log)") { runTestTrigger() }
+        hero.addView(testBtn)
         sirenBtn = button("SIREN BAND KAREIN", danger = true) {
             Siren.stop()
             Prefs.log(this, "App se siren band ki")
@@ -115,11 +120,29 @@ class MainActivity : Activity() {
         setup.addView(cameraRow)
         notifRow = label("", 15f)
         setup.addView(notifRow)
-        setup.addView(button("Camera aur notification ijazat dein") { askPermissions() })
+        locRow = label("", 15f)
+        setup.addView(locRow)
+        setup.addView(button("Camera, location aur notification ijazat dein") { askPermissions() })
+        setup.addView(button("Location 'Hamesha' (background) ke liye settings") {
+            startActivity(
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                    .setData(android.net.Uri.parse("package:$packageName"))
+            )
+        })
         setup.addView(button("Battery 'Unrestricted' karein") {
             startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
         })
         root.addView(setup)
+
+        // ---- local alert queue ----
+        val ql = card()
+        ql.addView(title("Alert queue (sirf aapke phone me)"))
+        queueInfo = label("", 13f, dim = true)
+        ql.addView(queueInfo)
+        ql.addView(button("Queue dekhein (photo, GPS link, battery)") {
+            startActivity(Intent(this, EventsActivity::class.java))
+        })
+        root.addView(ql)
 
         // ---- wrong password ----
         val pw = card()
@@ -295,7 +318,7 @@ class MainActivity : Activity() {
                 pin.text.clear()
                 Prefs.log(this, "Galat App PIN ($pinFails)")
                 if (pinFails == 3 && Prefs.selfieOn(this) && hasCamera()) {
-                    SelfieCapture.run(this, "Galat App PIN") { _, msg -> Prefs.log(this, msg) }
+                    EventRecorder.trigger(this, "Galat App PIN", "Galat App PIN", EventRecorder.PhotoMode.CAPTURE_NOW)
                 }
                 if (pinFails >= 5) {
                     pinFails = 0
@@ -402,6 +425,7 @@ class MainActivity : Activity() {
             .setPositiveButton("Mitayein") { _, _ ->
                 SelfieCapture.listPhotos(this).forEach { SelfieCapture.deletePhoto(this, it) }
                 Prefs.clearEvents(this)
+                EventStore.clear(this)
                 Toast.makeText(this, "Sab mita diya", Toast.LENGTH_SHORT).show()
                 refresh()
             }
@@ -421,6 +445,10 @@ class MainActivity : Activity() {
         ui.post(poll)
         SelfieCapture.purgeOld(this, Prefs.retentionDays(this))
         if (!Gate.isOpen(this) && Prefs.bioOn(this)) tryBiometric()
+        if (Gate.isOpen(this) && !Prefs.permsAsked(this)) {
+            Prefs.setPermsAsked(this)
+            askPermissions()
+        }
         // The service may have been killed while the switch said "on".
         if (Prefs.guardOn(this) && GuardService.instance == null) {
             try { GuardService.start(this, true) } catch (_: Exception) {}
@@ -437,13 +465,16 @@ class MainActivity : Activity() {
         mark(adminRow, adminOn, "Device Admin")
         mark(cameraRow, camOn, "Camera ijazat")
         mark(notifRow, notifOn, "Notification ijazat")
+        val locOn = LocationFetcher.hasPermission(this)
+        mark(locRow, locOn, "Location ijazat")
 
         val on = Prefs.guardOn(this)
-        statusTitle.text = if (on) "SURAKSHA CHALU" else "SURAKSHA BAND"
+        statusTitle.text = if (on) "SMART PROTECTION: ON" else "SMART PROTECTION: OFF"
         statusTitle.setTextColor(if (on) green else red)
         statusSub.text = when {
             !adminOn -> "Pehle Device Admin chalu karein, warna photo aur lock kaam nahi karenge."
             !camOn -> "Camera ijazat dein, warna photo nahi aayegi."
+            !locOn -> "Location ijazat dein, warna GPS location nahi milegi."
             on -> "Camera background me: " + if (GuardService.cameraCapable) "taiyaar" else "pakka nahi"
             else -> "Upar switch dabakar shuru karein."
         }
@@ -456,6 +487,9 @@ class MainActivity : Activity() {
         }
         pinBtnLabel.text = if (Prefs.hasPin(this)) "App PIN badlein" else "App PIN lagayein (app kholne ke liye)"
         pinRemoveBtn.visibility = if (Prefs.hasPin(this)) View.VISIBLE else View.GONE
+        val queue = EventStore.readAll(this)
+        queueInfo.text = "Queue me ${queue.size} alert (${queue.count { !it.sent }} abhi bhejna baaki)" +
+            (queue.firstOrNull()?.let { "\nAakhri: ${it.reason} - ${EventRecord.formatTime(it.timeMs)}" } ?: "")
         events.text = Prefs.events(this).take(8).joinToString("\n").ifBlank { "Abhi kuch nahi hua" }
     }
 
@@ -468,7 +502,11 @@ class MainActivity : Activity() {
         checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
 
     private fun askPermissions() {
-        val list = mutableListOf(Manifest.permission.CAMERA)
+        val list = mutableListOf(
+            Manifest.permission.CAMERA,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+        )
         if (Build.VERSION.SDK_INT >= 33) list.add(Manifest.permission.POST_NOTIFICATIONS)
         requestPermissions(list.toTypedArray(), 1)
     }
@@ -494,6 +532,24 @@ class MainActivity : Activity() {
             Prefs.log(this, "Suraksha band")
         }
         refresh()
+    }
+
+    /** Runs the full pipeline once: photo + GPS + battery + network + time -> local queue. */
+    private fun runTestTrigger() {
+        testBtn.isEnabled = false
+        testBtn.text = "Test chal raha hai (12 second tak)..."
+        Prefs.log(this, "Test Trigger shuru")
+        EventRecorder.trigger(this, "Test Trigger", "Test Trigger", EventRecorder.PhotoMode.CAPTURE_NOW) { rec ->
+            testBtn.isEnabled = true
+            testBtn.text = "Test Trigger (photo + GPS + log)"
+            Toast.makeText(
+                this,
+                "Queue me save. Photo: " + (if (rec.photoName != null) "ok" else "nahi") +
+                    ", GPS: " + (if (rec.mapsLink != null) "ok" else "nahi"),
+                Toast.LENGTH_LONG,
+            ).show()
+            refresh()
+        }
     }
 
     private fun restartGuardIfOn() {

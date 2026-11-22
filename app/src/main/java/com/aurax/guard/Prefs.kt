@@ -19,7 +19,7 @@ object Prefs {
     private fun setBool(c: Context, k: String, v: Boolean) = p(c).edit().putBoolean(k, v).apply()
 
     /** Master switch: the always-on guard service. */
-    fun guardOn(c: Context) = bool(c, "guard_on", false)
+    fun guardOn(c: Context) = bool(c, "guard_on", true)
     fun setGuardOn(c: Context, v: Boolean) = setBool(c, "guard_on", v)
 
     fun selfieOn(c: Context) = bool(c, "selfie_on", true)
@@ -81,6 +81,10 @@ object Prefs {
     /** Torch strobe + vibration while the siren sounds. */
     fun sirenFlash(c: Context) = bool(c, "siren_flash", true)
     fun setSirenFlash(c: Context, v: Boolean) = setBool(c, "siren_flash", v)
+
+    /** True once the first-run permission request was shown. */
+    fun permsAsked(c: Context) = bool(c, "perms_asked", false)
+    fun setPermsAsked(c: Context) = setBool(c, "perms_asked", true)
 
     fun clearEvents(c: Context) = p(c).edit().remove("events").apply()
 

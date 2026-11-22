@@ -55,7 +55,8 @@ class GuardService : Service(), SensorEventListener {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val fromUi = intent?.getBooleanExtra(EXTRA_FROM_UI, false) ?: false
         val camOk = checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
-        startAsForeground(withCamera = fromUi && camOk)
+        val locOk = LocationFetcher.hasPermission(this)
+        startAsForeground(withCamera = fromUi && camOk, withLocation = fromUi && locOk)
 
         instance = this
         sensors = getSystemService(SensorManager::class.java)
@@ -72,16 +73,19 @@ class GuardService : Service(), SensorEventListener {
         return START_STICKY
     }
 
-    private fun startAsForeground(withCamera: Boolean) {
-        val note = Notif.build(this, "Chori se bachav chalu hai")
+    private fun startAsForeground(withCamera: Boolean, withLocation: Boolean) {
+        val note = Notif.build(this, "Smart Protection chalu hai")
         val special = ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
-        if (withCamera) {
+        if (withCamera || withLocation) {
+            var type = special
+            if (withCamera) type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
+            if (withLocation) type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
             try {
-                startForeground(12, note, special or ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA)
-                cameraCapable = true
+                startForeground(12, note, type)
+                cameraCapable = withCamera
                 return
             } catch (e: Exception) {
-                Prefs.log(this, "Camera type foreground nahi mila: ${e.message}")
+                Prefs.log(this, "Camera/location type foreground nahi mila: ${e.message}")
             }
         }
         cameraCapable = false
@@ -166,6 +170,8 @@ class GuardService : Service(), SensorEventListener {
             "$reason: " + (if (locked) "screen lock kar di" else "Device Admin band, lock nahi hui") +
                 (if (siren) ", siren chalu" else ""),
         )
+        // Also write photo-less metadata (GPS, battery, network, time) to the local queue.
+        EventRecorder.trigger(this, reason, reason, EventRecorder.PhotoMode.NONE)
     }
 
     /** Called when a wrong password was entered. */

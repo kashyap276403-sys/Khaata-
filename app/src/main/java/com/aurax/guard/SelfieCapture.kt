@@ -56,6 +56,25 @@ class SelfieCapture(private val ctx: Context, private val label: String = "") {
             }
         }
 
+        /**
+         * Like [run] but also reports the saved photo's name (for the event queue).
+         * [run] itself is unchanged.
+         */
+        fun runNamed(ctx: Context, label: String, cb: (Boolean, String, String?) -> Unit) {
+            val first = SelfieCapture(ctx, label)
+            first.capture { ok, msg ->
+                if (ok || msg.contains("permission", ignoreCase = true)) {
+                    cb(ok, msg, first.savedName)
+                } else {
+                    Prefs.log(ctx, "Pehli koshish fail ($msg). Dobara try...")
+                    Handler(android.os.Looper.getMainLooper()).postDelayed({
+                        val second = SelfieCapture(ctx, label)
+                        second.capture { ok2, msg2 -> cb(ok2, msg2, second.savedName) }
+                    }, 800)
+                }
+            }
+        }
+
         /** All intruder photos (gallery folder + app-private folder), newest first. */
         fun listPhotos(ctx: Context): List<Photo> {
             val out = mutableListOf<Photo>()
@@ -139,6 +158,9 @@ class SelfieCapture(private val ctx: Context, private val label: String = "") {
     private var jpegReader: ImageReader? = null
     private var sensorOrientation = 0
     private var onDone: ((Boolean, String) -> Unit)? = null
+
+    /** File name of the photo that was saved, once [capture] reported success. */
+    @Volatile var savedName: String? = null
 
     @SuppressLint("MissingPermission")
     fun capture(onDone: (Boolean, String) -> Unit) {
@@ -263,6 +285,7 @@ class SelfieCapture(private val ctx: Context, private val label: String = "") {
             if (!Prefs.photosInGallery(ctx)) {
                 java.io.File(privateDir(ctx), "$name.enc")
                     .writeBytes(PhotoCrypto.encrypt(PhotoCrypto.keystoreKey(), bytes))
+                savedName = "$name.enc"
                 finish(true, "Photo encrypt karke app ke andar save hui (gallery me nahi): $name")
                 return
             }
@@ -282,6 +305,7 @@ class SelfieCapture(private val ctx: Context, private val label: String = "") {
             values.clear()
             values.put(MediaStore.Images.Media.IS_PENDING, 0)
             resolver.update(uri, values, null, null)
+            savedName = name
             finish(true, "Photo gallery me save hui: $FOLDER/$name")
         } catch (e: Exception) {
             finish(false, "Save error: ${e.message}")
