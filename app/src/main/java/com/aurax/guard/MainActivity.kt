@@ -201,7 +201,7 @@ class MainActivity : Activity(), HomeActions {
         // ---- privacy ----
         val pv = card()
         pv.addView(title("Privacy"))
-        pv.addView(label("Ye app internet use hi nahi karti. Photos aur settings sirf aapke phone me rehti hain.", 13f, dim = true))
+        pv.addView(label("Internet sirf tab use hota hai jab aap Telegram alerts chalu karein. Tab alert (photo, location) aapke apne bot ko jata hai. Baaki sab sirf is phone me rehta hai.", 13f, dim = true))
         pinBtnLabel = button("") { setOrChangePin() }
         pv.addView(pinBtnLabel)
         pinRemoveBtn = button("App PIN hatayein") { removePin() }
@@ -554,6 +554,7 @@ class MainActivity : Activity(), HomeActions {
 
     override fun openPhotos() = startActivity(Intent(this, PhotosActivity::class.java))
     override fun openQueue() = startActivity(Intent(this, EventsActivity::class.java))
+    override fun openTelegram() = startActivity(Intent(this, com.aurax.guard.telegram.TelegramSettingsActivity::class.java))
     override fun openControls() = shell.showControls()
 
     override fun stopSiren() {

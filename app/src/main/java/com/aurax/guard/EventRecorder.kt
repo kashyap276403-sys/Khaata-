@@ -84,6 +84,7 @@ object EventRecorder {
                 Prefs.log(app, "Queue me save nahi hua: ${e.message}")
             }
             try { if (wake?.isHeld == true) wake.release() } catch (_: Exception) {}
+            try { com.aurax.guard.telegram.TelegramDispatcher.kick(app) } catch (_: Exception) {}
             main.post { onDone?.invoke(rec) }
         }
 

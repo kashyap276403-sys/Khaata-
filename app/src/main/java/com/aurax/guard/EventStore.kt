@@ -53,6 +53,15 @@ object EventStore {
         file(ctx).writeText(all.joinToString("") { encodeLine(key, it) + "\n" })
     }
 
+    /** Changes one entry in place (used for Telegram retry bookkeeping). */
+    @Synchronized
+    fun update(ctx: Context, id: String, change: (EventRecord) -> EventRecord) {
+        val all = readAll(ctx).reversed()
+        if (all.none { it.id == id }) return
+        val key = PhotoCrypto.keystoreKey()
+        file(ctx).writeText(all.joinToString("") { encodeLine(key, if (it.id == id) change(it) else it) + "\n" })
+    }
+
     @Synchronized
     fun clear(ctx: Context) {
         file(ctx).delete()

@@ -6,3 +6,11 @@ local.properties
 *.jks
 *.keystore
 key.properties
+
+# local secrets: never commit tokens
+.env
+*.env
+secrets.properties
+telegram.properties
+*.token
+google-services.json

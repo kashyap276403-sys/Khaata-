@@ -29,6 +29,9 @@ data class EventRecord(
     val network: String = "",
     val audioName: String? = null, // used in Version 2
     val sent: Boolean = false,
+    val attempts: Int = 0, // Telegram send attempts so far
+    val lastError: String = "", // why the last Telegram attempt failed (never contains the token)
+    val nextTryMs: Long = 0, // do not retry before this time
 ) {
     val mapsLink: String? get() = if (lat != null && lon != null) MapsLink.of(lat, lon) else null
 
@@ -46,6 +49,9 @@ data class EventRecord(
         put("net", network)
         put("audio", audioName ?: JSONObject.NULL)
         put("sent", sent)
+        put("tgAtt", attempts)
+        put("tgErr", lastError)
+        put("tgNext", nextTryMs)
     }.toString()
 
     /** Plain-text report (what a Telegram message would contain later). */
@@ -87,6 +93,9 @@ data class EventRecord(
                 network = o.optString("net", ""),
                 audioName = str("audio"),
                 sent = o.optBoolean("sent", false),
+                attempts = o.optInt("tgAtt", 0),
+                lastError = o.optString("tgErr", ""),
+                nextTryMs = o.optLong("tgNext", 0L),
             )
         }
     }

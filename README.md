@@ -1,6 +1,6 @@
 # auraX Guard
 
-Free, offline anti-theft app for Android. No ads, no account, no internet.
+Free, offline anti-theft app for Android. No ads, no account. Internet is used only if you turn on optional Telegram alerts.
 
 ## What it does (v0.4)
 1. **Intruder photo** - wrong lock-screen PIN/password/pattern: front camera
@@ -17,7 +17,7 @@ Free, offline anti-theft app for Android. No ads, no account, no internet.
 7. **Haath mat lagao mode** - phone on a table: any touch sets off the siren.
 8. **Privacy** - app PIN (salted hash only), hide from screenshots/recents,
    keep intruder photos inside the app instead of the gallery, in-app photo
-   viewer with delete, wipe-all button. The app has no internet permission.
+   viewer with delete, wipe-all button. Internet permission is used only for the optional Telegram alerts (BOT_TOKEN and CHAT_ID are typed in the app and stored encrypted on the phone, never in this repo).
 9. **More privacy (v0.4)** - photos kept inside the app are AES-256 encrypted
    (Android Keystore); optional auto-delete after 7/30 days; app unlock time
    (1/5/15 min); fingerprint unlock; a photo is taken after 3 wrong App PINs;
