@@ -33,9 +33,11 @@ import android.widget.ScrollView
 import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
+import com.aurax.guard.ui.HomeActions
+import com.aurax.guard.ui.TabShell
 
 /** One screen: big on/off, setup checklist, per-feature cards, event history. */
-class MainActivity : Activity() {
+class MainActivity : Activity(), HomeActions {
     private val green = Color.rgb(80, 220, 160)
     private val red = Color.rgb(255, 110, 110)
 
@@ -53,6 +55,7 @@ class MainActivity : Activity() {
     private lateinit var sirenBtn: Button
     private lateinit var lockView: View
     private lateinit var mainView: View
+    private lateinit var shell: TabShell
     private lateinit var pinBtnLabel: Button
     private lateinit var pinRemoveBtn: Button
     private val syncs = mutableListOf<() -> Unit>()
@@ -63,6 +66,7 @@ class MainActivity : Activity() {
     private val poll = object : Runnable {
         override fun run() {
             sirenBtn.visibility = if (Siren.isPlaying()) View.VISIBLE else View.GONE
+            if (::shell.isInitialized) shell.setSirenVisible(Siren.isPlaying())
             ui.postDelayed(this, 700)
         }
     }
@@ -267,10 +271,18 @@ class MainActivity : Activity() {
             addView(root)
         }
         lockView = buildLock()
+        // The old full screen (mainView) is kept intact; it opens from Home as "Protection settings".
+        shell = TabShell(this, mainView, this)
         setContentView(FrameLayout(this).apply {
-            addView(mainView)
+            addView(shell.root)
             addView(lockView)
         })
+    }
+
+    override fun onBackPressed() {
+        if (::shell.isInitialized && Gate.isOpen(this) && shell.back()) return
+        @Suppress("DEPRECATION")
+        super.onBackPressed()
     }
 
     /** PIN screen shown instead of the app while the app PIN has not been entered. */
@@ -359,7 +371,7 @@ class MainActivity : Activity() {
     private fun showGate() {
         val open = Gate.isOpen(this)
         lockView.visibility = if (open) View.GONE else View.VISIBLE
-        mainView.visibility = if (open) View.VISIBLE else View.GONE
+        shell.root.visibility = if (open) View.VISIBLE else View.GONE
         bioBtn.visibility = if (Prefs.bioOn(this)) View.VISIBLE else View.GONE
     }
 
@@ -491,6 +503,7 @@ class MainActivity : Activity() {
         queueInfo.text = "Queue me ${queue.size} alert (${queue.count { !it.sent }} abhi bhejna baaki)" +
             (queue.firstOrNull()?.let { "\nAakhri: ${it.reason} - ${EventRecord.formatTime(it.timeMs)}" } ?: "")
         events.text = Prefs.events(this).take(8).joinToString("\n").ifBlank { "Abhi kuch nahi hua" }
+        if (::shell.isInitialized) shell.refresh()
     }
 
     private fun mark(v: TextView, ok: Boolean, name: String) {
@@ -511,13 +524,69 @@ class MainActivity : Activity() {
         requestPermissions(list.toTypedArray(), 1)
     }
 
+    // ---- HomeActions: the new Home tab calls the existing logic above ----
+    override fun testTrigger() = runTestTrigger()
+
+    override fun togglePark() {
+        val on = !Prefs.parkOn(this)
+        Prefs.setParkOn(this, on)
+        if (on && !Prefs.guardOn(this)) setGuard(true) else restartGuardIfOn()
+        if (on) Toast.makeText(this, "10 second baad active hoga", Toast.LENGTH_LONG).show()
+        refresh()
+    }
+
+    override fun fixSetup() {
+        if (!hasCamera() || !LocationFetcher.hasPermission(this)) {
+            askPermissions()
+        } else if (!dpm.isAdminActive(admin)) {
+            startActivity(
+                Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
+                    .putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, admin)
+                    .putExtra(
+                        DevicePolicyManager.EXTRA_ADD_EXPLANATION,
+                        "Galat password pakadne aur screen lock karne ke liye zaroori hai.",
+                    )
+            )
+        } else {
+            shell.showControls()
+        }
+    }
+
+    override fun openPhotos() = startActivity(Intent(this, PhotosActivity::class.java))
+    override fun openQueue() = startActivity(Intent(this, EventsActivity::class.java))
+    override fun openControls() = shell.showControls()
+
+    override fun stopSiren() {
+        Siren.stop()
+        Prefs.log(this, "App se siren band ki")
+        refresh()
+    }
+
+    override fun quickLock() {
+        if (dpm.isAdminActive(admin)) {
+            dpm.lockNow()
+            Prefs.log(this, "Quick Lock: screen lock ki")
+        } else {
+            Toast.makeText(this, "Quick Lock ke liye pehle Device Admin chalu karein", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    override fun panic() {
+        val locked = dpm.isAdminActive(admin)
+        if (locked) dpm.lockNow()
+        Siren.start(this)
+        Prefs.log(this, "Panic: " + (if (locked) "screen lock + " else "") + "siren chalu")
+        EventRecorder.trigger(this, "Panic button", "Panic", EventRecorder.PhotoMode.NONE)
+        refresh()
+    }
+
     override fun onRequestPermissionsResult(code: Int, perms: Array<out String>, results: IntArray) {
         super.onRequestPermissionsResult(code, perms, results)
         restartGuardIfOn()
         refresh()
     }
 
-    private fun setGuard(on: Boolean) {
+    override fun setGuard(on: Boolean) {
         Prefs.setGuardOn(this, on)
         if (on) {
             if (!hasCamera()) askPermissions()
