@@ -42,11 +42,13 @@ object TelegramConfig {
     /** Last 4 characters only, so you can recognise which token is saved. */
     fun tokenTail(c: Context) = p(c).getString("token_tail", "") ?: ""
 
-    fun token(c: Context): String? = try {
+    fun token(c: Context): String? {
+        return try {
         val enc = p(c).getString("token_enc", null) ?: return null
         String(PhotoCrypto.decrypt(PhotoCrypto.keystoreKey(), Base64.decode(enc, Base64.NO_WRAP)), Charsets.UTF_8)
-    } catch (_: Exception) {
-        null
+        } catch (_: Exception) {
+            null
+        }
     }
 
     /** Returns false if the phone's secure storage could not be used. */
