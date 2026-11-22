@@ -7,6 +7,7 @@ import android.os.PowerManager
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Collects photo + GPS + battery + network + time for one trigger and saves it
@@ -49,9 +50,9 @@ object EventRecorder {
             null
         }
 
-        @Volatile var fix: LocationFetcher.Fix? = null
-        @Volatile var locNote = ""
-        @Volatile var photoName: String? = null
+        val fixRef = AtomicReference<LocationFetcher.Fix?>(null)
+        val locNoteRef = AtomicReference("")
+        val photoRef = AtomicReference<String?>(null)
         val parts = AtomicInteger(if (photo == PhotoMode.NONE) 1 else 2)
         val finished = AtomicBoolean(false)
 
@@ -61,11 +62,11 @@ object EventRecorder {
                 id = UUID.randomUUID().toString(),
                 timeMs = startMs,
                 reason = reason,
-                photoName = photoName,
-                lat = fix?.lat,
-                lon = fix?.lon,
-                accuracyM = fix?.accuracyM,
-                locationNote = locNote,
+                photoName = photoRef.get(),
+                lat = fixRef.get()?.lat,
+                lon = fixRef.get()?.lon,
+                accuracyM = fixRef.get()?.accuracyM,
+                locationNote = locNoteRef.get(),
                 batteryPct = meta.batteryPct,
                 charging = meta.charging,
                 network = meta.network,
@@ -93,8 +94,8 @@ object EventRecorder {
         main.postDelayed({ finish() }, HARD_LIMIT_MS)
 
         LocationFetcher.fetch(app) { f, note ->
-            fix = f
-            locNote = note
+            fixRef.set(f)
+            locNoteRef.set(note)
             partDone()
         }
 
@@ -102,7 +103,7 @@ object EventRecorder {
             PhotoMode.NONE -> {}
             PhotoMode.CAPTURE_NOW -> SelfieCapture.runNamed(app, label) { ok, msg, name ->
                 Prefs.log(app, msg)
-                if (ok) photoName = name
+                if (ok) photoRef.set(name)
                 partDone()
             }
             PhotoMode.WAIT_FOR_EXTERNAL -> {
@@ -111,7 +112,7 @@ object EventRecorder {
                     override fun run() {
                         val p = SelfieCapture.listPhotos(app).firstOrNull { it.timeMs >= startMs - 2_000 }
                         if (p != null) {
-                            photoName = p.name
+                            photoRef.set(p.name)
                             partDone()
                         } else if (waited >= WAIT_PHOTO_MS) {
                             partDone()
