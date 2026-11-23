@@ -14,6 +14,7 @@ import com.aurax.guard.ui.Ui
 class AlertSettingsActivity : Activity() {
     private lateinit var quietInfo: TextView
     private lateinit var graceInfo: TextView
+    private lateinit var smartBox: LinearLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,8 +78,37 @@ class AlertSettingsActivity : Activity() {
         g.addView(Ui.dimText(c, "Screen on/off ya unlock ke baad itne second jhatka ignore hota hai (phone rakhna ya uthana). Sensitivity: Protection settings me Kam / Madhyam / Zyada."))
         root.addView(g)
 
+        // ---- local smart engine ----
+        val sm = Ui.card(c, Ui.teal, 12)
+        sm.addView(Ui.text(c, "Local Smart Engine", 15f, bold = true))
+        sm.addView(Ui.dimText(c, "Phone par chalta hai, bina internet, API key ya account ke. Har alert ka risk (Low/Medium/High), summary aur agla kadam batata hai."))
+        sm.addView(sw("Smart summary aur risk", { Prefs.smartOn(c) }) { Prefs.setSmartOn(c, it) })
+        sm.addView(sw("Galat trigger par sensitivity khud halki karein", { Prefs.autoTune(c) }) { Prefs.setAutoTune(c, it); renderSmart() })
+        sm.addView(Ui.dimText(c, "Auto-adjust sirf tab, jab 24 ghante me 4+ jhatke aaye aur galat password/SIM/door jana jaisa koi sanket na ho. Ek baar me ek kadam, din me ek baar se zyada nahi, protection kabhi band nahi karta, aur wapas le sakte ho."))
+        smartBox = LinearLayout(c).apply { orientation = LinearLayout.VERTICAL }
+        sm.addView(smartBox)
+        root.addView(sm)
+
         setContentView(ScrollView(c).apply { setBackgroundColor(Color.BLACK); isFillViewport = true; addView(root) })
         renderGrace()
+        renderSmart()
+    }
+
+    private fun renderSmart() {
+        val c = this
+        smartBox.removeAllViews()
+        val t = com.aurax.guard.smart.AutoTuner.current(c)
+        if (t != null) {
+            smartBox.addView(Ui.text(c, "Suggestion", 14f, bold = true, color = Ui.amber).apply { setPadding(0, Ui.dp(c, 8), 0, 0) })
+            smartBox.addView(Ui.dimText(c, t.reason + " Naya: " + Prefs.snatchNames[t.newLevel] + ", grace " + t.newGrace + "s"))
+            smartBox.addView(Ui.button(c, "Ye suggestion lagayein", Ui.Btn.PRIMARY, 6) { com.aurax.guard.smart.AutoTuner.apply(c, t, auto = false); renderSmart(); renderGrace() })
+        } else {
+            smartBox.addView(Ui.dimText(c, "Abhi koi badlav suggest nahi hua. Sensitivity theek lag rahi hai.").apply { setPadding(0, Ui.dp(c, 8), 0, 0) })
+        }
+        if (Prefs.autoPrev(c) != null) {
+            smartBox.addView(Ui.dimText(c, "Aakhri smart badlav: " + Prefs.autoNote(c)))
+            smartBox.addView(Ui.button(c, "Wapas purani setting karein", Ui.Btn.GHOST, 6) { com.aurax.guard.smart.AutoTuner.undo(c); renderSmart(); renderGrace() })
+        }
     }
 
     private fun sw(text: String, read: () -> Boolean, on: (Boolean) -> Unit) = Switch(this).apply {

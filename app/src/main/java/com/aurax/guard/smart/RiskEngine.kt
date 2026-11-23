@@ -83,7 +83,7 @@ object RiskEngine {
         val movedFar = moved != null && moved > 300
 
         var score = when (i.type) {
-            AlertType.SIM -> 2
+            AlertType.SIM -> 3 // a SIM removed or swapped is always serious
             AlertType.WRONG_UNLOCK -> 1
             AlertType.MANUAL -> if (i.reason.contains("panic", true)) 1 else 0
             else -> 0
