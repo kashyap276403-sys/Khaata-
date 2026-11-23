@@ -103,7 +103,9 @@ object TelegramDispatcher {
             val targets = TelegramConfig.targets(app)
             val ids = targets.map { it.id }
             var sent = 0
-            for (rec in due) {
+            for (rec0 in due) {
+                // Optional AI line (once per alert). If AI is off/unreachable the alert simply goes without it.
+                val rec = try { com.aurax.guard.ai.AiSummarizer.ensure(app, rec0) } catch (_: Exception) { rec0 }
                 var done = TelegramRules.parseDone(rec.doneTo)
                 val hasAudio = rec.audioName != null && com.aurax.guard.AudioClip.file(app, rec.audioName).exists()
                 var stop = false

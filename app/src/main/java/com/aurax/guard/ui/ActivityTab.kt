@@ -68,6 +68,21 @@ class ActivityTab(private val act: Activity, private val openQueue: () -> Unit) 
         val c = act
         val card = Ui.card(c, null, 10)
         card.addView(Ui.text(c, r.reason, 16f, bold = true, color = Ui.emerald))
+        run {
+            val ctx: android.content.Context = c
+            val cfg = com.aurax.guard.telegram.TelegramConfig
+            val badge = com.aurax.guard.telegram.Badges.forRecord(r, cfg.configured(ctx), cfg.sinceMs(ctx), com.aurax.guard.telegram.TelegramDispatcher.isOnline(ctx))
+            val rowv = android.widget.LinearLayout(ctx).apply { orientation = android.widget.LinearLayout.HORIZONTAL; gravity = android.view.Gravity.CENTER_VERTICAL }
+            val lbl = android.widget.TextView(ctx)
+            lbl.text = "Device: " + cfg.label(ctx)
+            lbl.textSize = 13f
+            lbl.setTextColor(android.graphics.Color.WHITE)
+            lbl.setTypeface(lbl.typeface, android.graphics.Typeface.BOLD)
+            rowv.addView(lbl, android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            rowv.addView(com.aurax.guard.ui.Ui.statusBadge(ctx, badge))
+            card.addView(rowv, 0)
+        }
+
         card.addView(Ui.dimText(c, EventRecord.formatTime(r.timeMs), 12f))
         card.addView(Ui.dimText(c,
             "Battery " + (if (r.batteryPct >= 0) "${r.batteryPct}%" else "?") + "  |  " + r.network.ifBlank { "network ?" } +

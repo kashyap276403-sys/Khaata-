@@ -400,7 +400,7 @@ class MainActivity : Activity(), HomeActions {
             .setView(input)
             .setPositiveButton("Theek hai") { _, _ -> onPin(input.text.toString()) }
             .setNegativeButton("Radd", null)
-            .show()
+            .create().also { d -> d.setOnShowListener { com.aurax.guard.ui.Ui.styleDialog(d) } }.show()
     }
 
     private fun setOrChangePin() {
@@ -448,7 +448,7 @@ class MainActivity : Activity(), HomeActions {
                 refresh()
             }
             .setNegativeButton("Rehne dein", null)
-            .show()
+            .create().also { d -> d.setOnShowListener { com.aurax.guard.ui.Ui.styleDialog(d) } }.show()
     }
 
     override fun onPause() {
@@ -560,6 +560,7 @@ class MainActivity : Activity(), HomeActions {
 
     override fun openPhotos() = startActivity(Intent(this, PhotosActivity::class.java))
     override fun openQueue() = startActivity(Intent(this, EventsActivity::class.java))
+    override fun openAi() = startActivity(Intent(this, com.aurax.guard.ai.AiSettingsActivity::class.java))
     override fun openReadiness() = startActivity(Intent(this, com.aurax.guard.oem.OemReadinessActivity::class.java))
     override fun openTelegram() = startActivity(Intent(this, com.aurax.guard.telegram.TelegramSettingsActivity::class.java))
     override fun openControls() = shell.showControls()

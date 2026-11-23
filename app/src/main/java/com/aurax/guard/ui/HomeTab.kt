@@ -102,6 +102,7 @@ class HomeTab(
             Tile(android.R.drawable.ic_menu_gallery, "Photos", "Intruder photos", false) { actions.openPhotos() },
             Tile(android.R.drawable.ic_menu_view, "Alert queue", "GPS, battery, samay", false) { actions.openQueue() },
             Tile(android.R.drawable.ic_menu_send, "Telegram alerts", com.aurax.guard.telegram.TelegramConfig.summary(c).take(26), false) { actions.openTelegram() },
+            Tile(android.R.drawable.ic_menu_help, "AI & Look", if (com.aurax.guard.ai.AiConfig.ready(c)) "AI chalu" else "AI band, glass, hints", false) { actions.openAi() },
             Tile(android.R.drawable.ic_menu_info_details, "Phone readiness", "Background / OEM check", false) { actions.openReadiness() },
             Tile(android.R.drawable.ic_menu_manage, "Protection settings", "PIN, siren, privacy", false) { actions.openControls() },
             Tile(android.R.drawable.ic_menu_search, "Permission check", "Risky apps dekhein", false) { goGuard() },
@@ -150,11 +151,7 @@ class HomeTab(
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.START
             setPadding(Ui.dp(c, 14), Ui.dp(c, 14), Ui.dp(c, 14), Ui.dp(c, 14))
-            background = GradientDrawable().apply {
-                cornerRadius = Ui.dp(c, 20).toFloat()
-                setColor(Color.argb(if (t.danger) 40 else 26, if (t.danger) 255 else 255, if (t.danger) 90 else 255, if (t.danger) 90 else 255))
-                setStroke(Ui.dp(c, 1), Color.argb(46, 255, 255, 255))
-            }
+            background = Ui.glass(c, 20, if (t.danger) Ui.red else null, strong = true)
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             addView(ImageView(c).apply {
                 setImageResource(t.icon)

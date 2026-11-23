@@ -202,7 +202,7 @@ class TelegramSettingsActivity : Activity() {
                 TelegramConfig.clearToken(this)
                 TelegramConfig.setEnabled(this, false)
                 render()
-            }.setNegativeButton("Nahi", null).show()
+            }.setNegativeButton("Nahi", null).create().also { d -> d.setOnShowListener { com.aurax.guard.ui.Ui.styleDialog(d) } }.show()
     }
 
     override fun onResume() {

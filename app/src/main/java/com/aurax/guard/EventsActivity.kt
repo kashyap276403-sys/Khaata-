@@ -75,17 +75,28 @@ class EventsActivity : Activity() {
         val c = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(14), dp(12), dp(14), dp(12))
-            background = GradientDrawable().apply {
-                cornerRadius = dp(20).toFloat()
-                setColor(Color.argb(26, 255, 255, 255))
-                setStroke(dp(1), Color.argb(46, 255, 255, 255))
-            }
+            background = com.aurax.guard.ui.Ui.glass(this@EventsActivity, 20)
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
             ).apply { topMargin = dp(14) }
         }
         c.addView(text(r.reason, 17f, bold = true).apply { setTextColor(Color.rgb(80, 220, 160)) })
+        run {
+            val ctx: android.content.Context = this@EventsActivity
+            val cfg = com.aurax.guard.telegram.TelegramConfig
+            val badge = com.aurax.guard.telegram.Badges.forRecord(r, cfg.configured(ctx), cfg.sinceMs(ctx), com.aurax.guard.telegram.TelegramDispatcher.isOnline(ctx))
+            val rowv = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL; gravity = android.view.Gravity.CENTER_VERTICAL }
+            val lbl = TextView(ctx)
+            lbl.text = "Device: " + cfg.label(ctx)
+            lbl.textSize = 13f
+            lbl.setTextColor(android.graphics.Color.WHITE)
+            lbl.setTypeface(lbl.typeface, android.graphics.Typeface.BOLD)
+            rowv.addView(lbl, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            rowv.addView(com.aurax.guard.ui.Ui.statusBadge(ctx, badge))
+            c.addView(rowv, 0)
+        }
+
         c.addView(text(EventRecord.formatTime(r.timeMs), 13f, dim = true))
         c.addView(
             text(
@@ -132,7 +143,7 @@ class EventsActivity : Activity() {
                 render()
             }
             .setNegativeButton("Rehne dein", null)
-            .show()
+            .create().also { d -> d.setOnShowListener { com.aurax.guard.ui.Ui.styleDialog(d) } }.show()
     }
 
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()

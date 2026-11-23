@@ -4,6 +4,12 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.LayerDrawable
+import android.app.ActivityManager
+import android.app.AlertDialog
+import android.app.Dialog
+import android.os.Build
+import android.view.WindowManager
 import android.view.Gravity
 import android.view.View
 import android.widget.Button
@@ -20,6 +26,86 @@ object Ui {
     val dim = Color.argb(185, 255, 255, 255)
 
     enum class Btn { PRIMARY, GHOST, DANGER }
+
+    // ---------- Liquid glass ----------
+    /** Glass look can be switched off in "AI & Look" and is off by default on low-RAM phones (smooth, light fallback). */
+    fun glassOn(c: Context): Boolean = try {
+        val p = c.getSharedPreferences("look", Context.MODE_PRIVATE)
+        if (p.contains("glass")) p.getBoolean("glass", true)
+        else !c.getSystemService(ActivityManager::class.java).isLowRamDevice
+    } catch (_: Exception) {
+        true
+    }
+
+    fun setGlass(c: Context, on: Boolean) = c.getSharedPreferences("look", Context.MODE_PRIVATE).edit().putBoolean("glass", on).apply()
+
+    /**
+     * Two thin layers, no blur and no shaders, so it costs almost nothing:
+     * a bright-to-faint hairline ring, and a frosted body that is lighter at the top (light catching the glass).
+     * [tint] adds a soft colour glow. Flat fallback = the old look.
+     */
+    fun glass(c: Context, radiusDp: Int, tint: Int? = null, strong: Boolean = false): android.graphics.drawable.Drawable {
+        val r = dp(c, radiusDp).toFloat()
+        val tr = if (tint != null) Color.red(tint) else 255
+        val tg = if (tint != null) Color.green(tint) else 255
+        val tb = if (tint != null) Color.blue(tint) else 255
+        if (!glassOn(c)) {
+            return GradientDrawable().apply {
+                cornerRadius = r
+                setColor(if (tint != null) Color.argb(46, tr, tg, tb) else Color.argb(26, 255, 255, 255))
+                setStroke(dp(c, 1), if (tint != null) Color.argb(120, tr, tg, tb) else Color.argb(46, 255, 255, 255))
+            }
+        }
+        val ring = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(
+            Color.argb(if (tint != null) 170 else 110, tr, tg, tb), Color.argb(26, 255, 255, 255), Color.argb(if (tint != null) 90 else 55, tr, tg, tb),
+        )).apply { cornerRadius = r }
+        val topA = if (strong) 64 else 44
+        val body = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(
+            Color.argb(topA, 255, 255, 255), Color.argb(if (tint != null) 30 else 16, tr, tg, tb), Color.argb(10, 255, 255, 255),
+        )).apply { cornerRadius = (r - dp(c, 1)).coerceAtLeast(0f) }
+        return LayerDrawable(arrayOf(ring, body)).apply { setLayerInset(1, dp(c, 1), dp(c, 1), dp(c, 1), dp(c, 1)) }
+    }
+
+    /** Shows a dialog with a frosted look. Blur-behind only where Android allows it (12+), harmless elsewhere. */
+    fun showGlass(b: AlertDialog.Builder): AlertDialog {
+        val d = b.create()
+        d.setOnShowListener { styleDialog(d) }
+        d.show()
+        return d
+    }
+
+    fun styleDialog(d: Dialog) {
+        try {
+            val c = d.context
+            val w = d.window ?: return
+            val base = GradientDrawable().apply {
+                cornerRadius = dp(c, 24).toFloat()
+                setColor(Color.argb(if (glassOn(c)) 214 else 245, 10, 26, 22))
+            }
+            w.setBackgroundDrawable(LayerDrawable(arrayOf(base, glass(c, 24, strong = true))))
+            if (glassOn(c) && Build.VERSION.SDK_INT >= 31) {
+                w.addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
+                w.attributes = w.attributes.apply { blurBehindRadius = 24 }
+            }
+            (d as? AlertDialog)?.let {
+                for (id in intArrayOf(android.R.id.button1, android.R.id.button2, android.R.id.button3)) it.findViewById<android.widget.Button>(id)?.setTextColor(emerald)
+                it.findViewById<TextView>(android.R.id.message)?.setTextColor(Color.WHITE)
+            }
+            val tid = c.resources.getIdentifier("alertTitle", "id", "android")
+            if (tid != 0) d.findViewById<TextView>(tid)?.setTextColor(Color.WHITE)
+        } catch (_: Exception) {
+            // keep the default dialog
+        }
+    }
+
+    /** Sent / Queued / Offline / Error pill for one alert. */
+    fun statusBadge(c: Context, b: com.aurax.guard.telegram.Badge) = badge(c, b.label, when (b.kind) {
+        com.aurax.guard.telegram.BadgeKind.SENT -> emerald
+        com.aurax.guard.telegram.BadgeKind.QUEUED -> amber
+        com.aurax.guard.telegram.BadgeKind.OFFLINE -> Color.rgb(140, 180, 255)
+        com.aurax.guard.telegram.BadgeKind.ERROR -> red
+        com.aurax.guard.telegram.BadgeKind.LOCAL -> Color.argb(200, 255, 255, 255)
+    })
 
     fun dp(c: Context, v: Int) = (v * c.resources.displayMetrics.density).toInt()
 
@@ -49,11 +135,7 @@ object Ui {
     fun card(c: Context, accent: Int? = null, topDp: Int = 12): LinearLayout = LinearLayout(c).apply {
         orientation = LinearLayout.VERTICAL
         setPadding(dp(c, 16), dp(c, 14), dp(c, 16), dp(c, 14))
-        background = GradientDrawable().apply {
-            cornerRadius = dp(c, 22).toFloat()
-            setColor(if (accent != null) Color.argb(46, Color.red(accent), Color.green(accent), Color.blue(accent)) else Color.argb(26, 255, 255, 255))
-            setStroke(dp(c, 1), if (accent != null) Color.argb(120, Color.red(accent), Color.green(accent), Color.blue(accent)) else Color.argb(46, 255, 255, 255))
-        }
+        background = glass(c, 22, accent)
         layoutParams = lp(c, topDp)
     }
 
@@ -65,7 +147,10 @@ object Ui {
             background = GradientDrawable().apply {
                 cornerRadius = dp(c, 14).toFloat()
                 when (style) {
-                    Btn.PRIMARY -> setColor(Color.argb(150, 25, 160, 120))
+                    Btn.PRIMARY -> {
+                        setColor(Color.argb(150, 25, 160, 120))
+                        setStroke(dp(c, 1), Color.argb(140, 120, 255, 214))
+                    }
                     Btn.GHOST -> {
                         setColor(Color.argb(20, 255, 255, 255))
                         setStroke(dp(c, 1), Color.argb(70, 255, 255, 255))

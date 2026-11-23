@@ -52,6 +52,10 @@
             android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <activity
+            android:name=".ai.AiSettingsActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".cleaner.CleanerActivity"
             android:exported="false" />
 

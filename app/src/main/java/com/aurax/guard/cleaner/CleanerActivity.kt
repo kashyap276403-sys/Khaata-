@@ -84,7 +84,7 @@ class CleanerActivity : Activity() {
         try {
             startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE), PICK)
         } catch (_: Exception) {
-            AlertDialog.Builder(this).setMessage("Is phone par folder chunne wali screen nahi khuli.").setPositiveButton("OK", null).show()
+            AlertDialog.Builder(this).setMessage("Is phone par folder chunne wali screen nahi khuli.").setPositiveButton("OK", null).create().also { d -> d.setOnShowListener { com.aurax.guard.ui.Ui.styleDialog(d) } }.show()
         }
     }
 
@@ -162,10 +162,30 @@ class CleanerActivity : Activity() {
             addView(Ui.dimText(c, "${SizeFormat.bytes(it.size)}  |  ${it.path}"))
             addView(Ui.badge(c, it.verdict.level.label, col).apply { layoutParams = Ui.lp(c, 4).apply { width = LinearLayout.LayoutParams.WRAP_CONTENT } })
             addView(Ui.dimText(c, it.verdict.reasons.joinToString("; ")))
+            if (com.aurax.guard.ai.AiConfig.ready(c)) {
+                addView(Ui.button(c, "AI se samjhao (sirf salah)", Ui.Btn.GHOST, 4) { explain(it) })
+            }
         }
     }
 
     private fun updateBar() = render()
+
+    /** Optional. Sends only the file name, size and the app's warning signs. The answer is advice; it never selects or deletes anything. */
+    private fun explain(it: ScanItem) {
+        val app = applicationContext
+        android.widget.Toast.makeText(this, "AI se pooch rahe hain...", android.widget.Toast.LENGTH_SHORT).show()
+        io.execute {
+            val r = com.aurax.guard.ai.AiSummarizer.explainFile(app, it.name, it.size, it.verdict.reasons)
+            runOnUiThread {
+                if (isDestroyed) return@runOnUiThread
+                val msg = when (r) {
+                    is com.aurax.guard.ai.AiResult.Ok -> r.text + "\n\nYe sirf salah hai. File aap hi chunoge aur confirm karoge, app kuch delete nahi karegi."
+                    is com.aurax.guard.ai.AiResult.Err -> "AI abhi nahi chali (" + r.why + "). Upar di gayi wajah dekhein, scanner normal chalta hai."
+                }
+                Ui.showGlass(AlertDialog.Builder(this).setTitle(it.name).setMessage(msg).setPositiveButton("OK", null))
+            }
+        }
+    }
 
     private fun confirm() {
         val chosen = items.filter { sel.isSelected(it.id) }
@@ -178,7 +198,7 @@ class CleanerActivity : Activity() {
             .setMessage("Ye files hamesha ke liye delete hongi:\n\n$names")
             .setPositiveButton("Haan, delete karo") { _, _ -> doDelete(chosen) }
             .setNegativeButton("Nahi", null)
-            .show()
+            .create().also { d -> d.setOnShowListener { com.aurax.guard.ui.Ui.styleDialog(d) } }.show()
     }
 
     private fun doDelete(chosen: List<ScanItem>) {
@@ -194,7 +214,7 @@ class CleanerActivity : Activity() {
                 items = items.filter { it.id !in gone }
                 sel.clear(); busy = false; render()
                 AlertDialog.Builder(this).setMessage("$ok / ${chosen.size} files delete hui. ${SizeFormat.bytes(freed)} jagah khaali.")
-                    .setPositiveButton("OK", null).show()
+                    .setPositiveButton("OK", null).create().also { d -> d.setOnShowListener { com.aurax.guard.ui.Ui.styleDialog(d) } }.show()
             }
         }
     }
