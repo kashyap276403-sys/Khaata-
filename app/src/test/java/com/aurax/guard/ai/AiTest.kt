@@ -36,7 +36,7 @@ class AiTest {
         assertTrue(TelegramFormat.caption("L", long).length <= TelegramFormat.CAPTION_MAX)
         assertTrue(TelegramFormat.caption("L", long).contains("AI: "))
     }
-    @Test fun oldJsonHasNoAi() = assertEquals("", EventRecord.fromJson("{\"id\":\"a\",\"timeMs\":1,\"reason\":\"x\"}").aiSummary)
+    @Test fun oldJsonHasNoAi() = assertEquals("", EventRecord.fromJson(org.json.JSONObject(rec("zz").toJson()).apply { remove("ai"); remove("aiTry") }.toString()).aiSummary)
 
     @Test fun badges() {
         val base = rec()
