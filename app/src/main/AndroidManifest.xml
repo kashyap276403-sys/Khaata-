@@ -13,6 +13,8 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -50,6 +52,14 @@
             android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <activity
+            android:name=".cleaner.CleanerActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".oem.OemReadinessActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".EventsActivity"
             android:exported="false" />
 
@@ -81,7 +91,7 @@
         <service
             android:name=".GuardService"
             android:exported="false"
-            android:foregroundServiceType="specialUse|camera|location">
+            android:foregroundServiceType="specialUse|camera|location|microphone">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="anti_theft_motion_detection" />

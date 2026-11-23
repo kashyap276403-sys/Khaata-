@@ -53,7 +53,9 @@ object EventRecorder {
         val fixRef = AtomicReference<LocationFetcher.Fix?>(null)
         val locNoteRef = AtomicReference("")
         val photoRef = AtomicReference<String?>(null)
-        val parts = AtomicInteger(if (photo == PhotoMode.NONE) 1 else 2)
+        val wantAudio = AudioClip.canRecord(app)
+        val audioRef = AtomicReference<String?>(null)
+        val parts = AtomicInteger((if (photo == PhotoMode.NONE) 1 else 2) + (if (wantAudio) 1 else 0))
         val finished = AtomicBoolean(false)
 
         fun finish() {
@@ -63,6 +65,7 @@ object EventRecorder {
                 timeMs = startMs,
                 reason = reason,
                 photoName = photoRef.get(),
+                audioName = audioRef.get(),
                 lat = fixRef.get()?.lat,
                 lon = fixRef.get()?.lon,
                 accuracyM = fixRef.get()?.accuracyM,
@@ -99,6 +102,8 @@ object EventRecorder {
             locNoteRef.set(note)
             partDone()
         }
+
+        if (wantAudio) AudioClip.record(app) { n -> audioRef.set(n); partDone() }
 
         when (photo) {
             PhotoMode.NONE -> {}

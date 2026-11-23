@@ -172,9 +172,15 @@ class MainActivity : Activity(), HomeActions {
             restartGuardIfOn()
         })
         sn.addView(label("Sensitivity (Zyada = halke jhatke par bhi lock)", 13f, dim = true))
+        val sensHelp = label(SensitivityProfile.describe(Prefs.sensitivity(this)), 12f, dim = true)
         sn.addView(radios(Prefs.snatchNames, Prefs.sensitivity(this)) {
             Prefs.setSensitivity(this, it)
+            sensHelp.text = SensitivityProfile.describe(it)
             restartGuardIfOn()
+        })
+        sn.addView(sensHelp)
+        sn.addView(toggle("Phone unlock/use me ho to jhatka ignore karein", { Prefs.ignoreWhileUnlocked(this) }) {
+            Prefs.setIgnoreWhileUnlocked(this, it)
         })
         sn.addView(toggle("Charger nikalte hi alarm aur lock", { Prefs.chargerAlarmOn(this) }) {
             Prefs.setChargerAlarmOn(this, it)
@@ -554,6 +560,7 @@ class MainActivity : Activity(), HomeActions {
 
     override fun openPhotos() = startActivity(Intent(this, PhotosActivity::class.java))
     override fun openQueue() = startActivity(Intent(this, EventsActivity::class.java))
+    override fun openReadiness() = startActivity(Intent(this, com.aurax.guard.oem.OemReadinessActivity::class.java))
     override fun openTelegram() = startActivity(Intent(this, com.aurax.guard.telegram.TelegramSettingsActivity::class.java))
     override fun openControls() = shell.showControls()
 

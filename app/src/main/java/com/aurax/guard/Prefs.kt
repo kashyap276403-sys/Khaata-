@@ -42,6 +42,24 @@ object Prefs {
     fun setSensitivity(c: Context, v: Int) = p(c).edit().putInt("sens", v).apply()
 
     /** Detection is paused until this time (wall clock millis), 0 = not paused. */
+    /** Ignore motion while the phone is unlocked and being used (fewer false locks). On by default. */
+    fun ignoreWhileUnlocked(c: Context) = bool(c, "ign_unlocked", true)
+    fun setIgnoreWhileUnlocked(c: Context, v: Boolean) = setBool(c, "ign_unlocked", v)
+
+    /** Short audio clip with each trigger. OFF by default: it is a microphone recording. */
+    fun audioOn(c: Context) = bool(c, "audio_on", false)
+    fun setAudioOn(c: Context, v: Boolean) = setBool(c, "audio_on", v)
+    fun audioSeconds(c: Context) = p(c).getInt("audio_sec", 12).coerceIn(10, 15)
+    fun setAudioSeconds(c: Context, v: Int) = p(c).edit().putInt("audio_sec", v.coerceIn(10, 15)).apply()
+
+    /** Alert when the SIM is removed or changed. ON by default (only sends if Telegram is set up). */
+    fun simAlertOn(c: Context) = bool(c, "sim_alert", true)
+    fun setSimAlertOn(c: Context, v: Boolean) = setBool(c, "sim_alert", v)
+    fun simFingerprint(c: Context) = p(c).getString("sim_fp", "") ?: ""
+    fun setSimFingerprint(c: Context, v: String) = p(c).edit().putString("sim_fp", v).apply()
+    fun simLastAlertMs(c: Context) = p(c).getLong("sim_last", 0L)
+    fun setSimLastAlertMs(c: Context, v: Long) = p(c).edit().putLong("sim_last", v).apply()
+
     fun snoozeUntil(c: Context) = p(c).getLong("snooze_until", 0L)
     fun setSnoozeUntil(c: Context, v: Long) = p(c).edit().putLong("snooze_until", v).apply()
     fun snoozed(c: Context) = System.currentTimeMillis() < snoozeUntil(c)

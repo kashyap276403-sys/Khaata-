@@ -77,7 +77,7 @@ object TelegramClient {
 
     /** For the audio clip step later. */
     fun sendAudioFile(token: String, chatId: String, caption: String, bytes: ByteArray, name: String, mime: String): TgResult =
-        sendFile(token, "sendDocument", "document", chatId, caption, bytes, name, mime)
+        sendFile(token, "sendAudio", "audio", chatId, caption, bytes, name, mime)
 
     private fun sendFile(
         token: String, method: String, field: String, chatId: String, caption: String,

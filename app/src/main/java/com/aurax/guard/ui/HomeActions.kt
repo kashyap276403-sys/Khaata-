@@ -9,6 +9,7 @@ interface HomeActions {
     fun openPhotos()
     fun openQueue()
     fun openTelegram()
+    fun openReadiness()
     fun openControls()
     fun stopSiren()
     fun quickLock()

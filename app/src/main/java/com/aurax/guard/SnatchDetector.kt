@@ -14,20 +14,34 @@ class SnatchDetector(
     private val cooldownMs: Long,
     private val startMs: Long,
     private val minSamples: Int = 3,
+    /** The strong movement must last at least this long (0 = off). Sensor speed differs per phone, so time is safer than a sample count. */
+    private val minDurationMs: Long = 0,
+    /** A short dip below the threshold (up to this long) does not restart the count, because real jerks are bumpy. */
+    private val dipToleranceMs: Long = 0,
 ) {
     private var lastTriggerMs = Long.MIN_VALUE
     private var run = 0
+    private var runStartMs = Long.MIN_VALUE
+    private var lastStrongMs = Long.MIN_VALUE
 
     fun onSample(magnitude: Float, nowMs: Long): Boolean {
         if (nowMs - startMs < armDelayMs) return false
         if (lastTriggerMs != Long.MIN_VALUE && nowMs - lastTriggerMs < cooldownMs) return false
         if (magnitude < threshold) {
-            run = 0
+            if (lastStrongMs == Long.MIN_VALUE || nowMs - lastStrongMs > dipToleranceMs) {
+                run = 0
+                runStartMs = Long.MIN_VALUE
+            }
             return false
         }
+        if (run == 0) runStartMs = nowMs
+        lastStrongMs = nowMs
         run++
         if (run < minSamples) return false
+        if (nowMs - runStartMs < minDurationMs) return false
         run = 0
+        runStartMs = Long.MIN_VALUE
+        lastStrongMs = Long.MIN_VALUE
         lastTriggerMs = nowMs
         return true
     }

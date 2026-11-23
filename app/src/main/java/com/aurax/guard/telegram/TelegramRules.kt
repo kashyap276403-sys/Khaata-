@@ -35,6 +35,17 @@ object TelegramRules {
     fun isFailed(r: EventRecord, since: Long): Boolean =
         !r.sent && r.timeMs >= since && r.attempts >= MAX_ATTEMPTS
 
+    // ---- per-target delivery bookkeeping (no duplicates when several bots/chats are set) ----
+    fun parseDone(s: String): Set<String> = s.split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+    fun joinDone(s: Set<String>) = s.sorted().joinToString(",")
+
+    /** "t" = message delivered, "t:a" = audio delivered, "t!" = gave up on this target (bad extra bot). */
+    fun msgDone(done: Set<String>, t: String) = t in done || "$t!" in done
+    fun audioDone(done: Set<String>, t: String) = "$t:a" in done || "$t!" in done
+
+    fun complete(done: Set<String>, targets: List<String>, hasAudio: Boolean) =
+        targets.all { msgDone(done, it) && (!hasAudio || audioDone(done, it)) }
+
     /** Never let the bot token appear in logs or on screen. */
     fun redact(text: String, token: String?): String =
         if (token.isNullOrBlank()) text else text.replace(token, "[token]")

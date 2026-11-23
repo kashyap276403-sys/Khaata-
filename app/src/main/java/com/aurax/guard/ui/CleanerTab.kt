@@ -68,9 +68,8 @@ class CleanerTab(private val act: Activity) {
         val safe = Ui.card(c, Ui.emerald, 12)
         safe.addView(Ui.text(c, "Zero auto-delete", 17f, bold = true))
         safe.addView(Ui.dimText(c, "Ye app kuch bhi apne aap nahi mitati. Safai ka tareeka: Scan, phir preview (naam, size, wajah), phir aap chunte ho, phir Confirm."))
-        safe.addView(Ui.button(c, "Junk scan (agle step me aa raha hai)") {}.apply {
-            isEnabled = false
-            alpha = 0.5f
+        safe.addView(Ui.button(c, "Scan, Preview aur Safe Clean kholein") {
+            act.startActivity(android.content.Intent(act, com.aurax.guard.cleaner.CleanerActivity::class.java))
         })
         body.addView(safe)
 

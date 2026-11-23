@@ -63,6 +63,76 @@ object TelegramConfig {
 
     fun clearToken(c: Context) = p(c).edit().remove("token_enc").remove("token_tail").apply()
 
+    // ---- extra bots / chats (additive; the primary above keeps working on its own) ----
+    const val MAX_EXTRA = 3
+    const val PRIMARY_ID = "main"
+
+    data class Target(val id: String, val name: String, val chatId: String, val token: String)
+
+    private fun extraJson(c: Context): org.json.JSONArray =
+        try { org.json.JSONArray(p(c).getString("extra", "[]")) } catch (_: Exception) { org.json.JSONArray() }
+
+    /** Names and chats of the extra targets (no token). */
+    fun extras(c: Context): List<Triple<String, String, String>> {
+        val a = extraJson(c)
+        return (0 until a.length()).map { a.getJSONObject(it).let { o -> Triple(o.getString("id"), o.optString("name"), o.optString("chat")) } }
+    }
+
+    fun addExtra(c: Context, name: String, chat: String, rawToken: String): Boolean = try {
+        val a = extraJson(c)
+        if (a.length() >= MAX_EXTRA) false else {
+            val t = TelegramRules.cleanToken(rawToken)
+            val enc = Base64.encodeToString(PhotoCrypto.encrypt(PhotoCrypto.keystoreKey(), t.toByteArray(Charsets.UTF_8)), Base64.NO_WRAP)
+            a.put(org.json.JSONObject().put("id", "x" + System.currentTimeMillis().toString(36)).put("name", name.trim().take(24).ifBlank { "Extra" })
+                .put("chat", TelegramRules.cleanChatId(chat)).put("tok", enc).put("tail", t.takeLast(4)).put("st", ""))
+            p(c).edit().putString("extra", a.toString()).apply()
+            true
+        }
+    } catch (_: Exception) {
+        false
+    }
+
+    fun removeExtra(c: Context, id: String) {
+        val a = extraJson(c)
+        val out = org.json.JSONArray()
+        for (i in 0 until a.length()) if (a.getJSONObject(i).getString("id") != id) out.put(a.getJSONObject(i))
+        p(c).edit().putString("extra", out.toString()).apply()
+    }
+
+    fun extraTail(c: Context, id: String): String {
+        val a = extraJson(c)
+        for (i in 0 until a.length()) a.getJSONObject(i).let { if (it.getString("id") == id) return it.optString("tail") }
+        return ""
+    }
+
+    fun setExtraStatus(c: Context, id: String, text: String) {
+        val a = extraJson(c)
+        for (i in 0 until a.length()) a.getJSONObject(i).let { if (it.getString("id") == id) it.put("st", text) }
+        p(c).edit().putString("extra", a.toString()).apply()
+    }
+
+    fun extraStatus(c: Context, id: String): String {
+        val a = extraJson(c)
+        for (i in 0 until a.length()) a.getJSONObject(i).let { if (it.getString("id") == id) return it.optString("st") }
+        return ""
+    }
+
+    /** Every place alerts go to: the primary first, then readable extras. */
+    fun targets(c: Context): List<Target> {
+        val out = mutableListOf<Target>()
+        token(c)?.let { out.add(Target(PRIMARY_ID, "Primary", chatId(c), it)) }
+        val a = extraJson(c)
+        for (i in 0 until a.length()) {
+            val o = a.getJSONObject(i)
+            try {
+                val tok = String(PhotoCrypto.decrypt(PhotoCrypto.keystoreKey(), Base64.decode(o.getString("tok"), Base64.NO_WRAP)), Charsets.UTF_8)
+                out.add(Target(o.getString("id"), o.optString("name"), o.optString("chat"), tok))
+            } catch (_: Exception) {
+            }
+        }
+        return out
+    }
+
     fun configured(c: Context) = enabled(c) && hasToken(c) && TelegramRules.isValidChatId(chatId(c))
 
     fun setStatus(c: Context, text: String) =

@@ -9,6 +9,7 @@ class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
         try { com.aurax.guard.telegram.TelegramDispatcher.scheduleIfWaiting(context) } catch (_: Exception) {}
+        try { SimWatcher.check(context) } catch (_: Exception) {}
         if (!Prefs.guardOn(context)) return
         try {
             GuardService.start(context, fromUi = false)

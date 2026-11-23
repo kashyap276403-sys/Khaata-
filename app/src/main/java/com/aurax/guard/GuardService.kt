@@ -32,6 +32,7 @@ class GuardService : Service(), SensorEventListener {
 
         @Volatile var instance: GuardService? = null
         @Volatile var cameraCapable = false
+        @Volatile var micCapable = false
 
         fun start(context: Context, fromUi: Boolean) {
             val i = Intent(context, GuardService::class.java).putExtra(EXTRA_FROM_UI, fromUi)
@@ -49,6 +50,7 @@ class GuardService : Service(), SensorEventListener {
     private var usingLinear = false
     private var motionReason = "Jhatka pakda gaya"
     private var chargerReceiver: BroadcastReceiver? = null
+    private var simReceiver: BroadcastReceiver? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -56,7 +58,8 @@ class GuardService : Service(), SensorEventListener {
         val fromUi = intent?.getBooleanExtra(EXTRA_FROM_UI, false) ?: false
         val camOk = checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
         val locOk = LocationFetcher.hasPermission(this)
-        startAsForeground(withCamera = fromUi && camOk, withLocation = fromUi && locOk)
+        val micOk = AudioClip.hasPermission(this) && Prefs.audioOn(this)
+        startAsForeground(withCamera = fromUi && camOk, withLocation = fromUi && locOk, withMic = fromUi && micOk)
 
         instance = this
         sensors = getSystemService(SensorManager::class.java)
@@ -66,6 +69,8 @@ class GuardService : Service(), SensorEventListener {
         SelfieCapture.purgeOld(this, Prefs.retentionDays(this))
         if (Prefs.snatchLockOn(this) || Prefs.parkOn(this)) startMotion()
         if (Prefs.chargerAlarmOn(this)) registerCharger()
+        registerSim()
+        SimWatcher.check(this)
         Prefs.log(
             this,
             "Guard chalu (camera ${if (cameraCapable) "taiyaar" else "background me nahi"})",
@@ -73,16 +78,19 @@ class GuardService : Service(), SensorEventListener {
         return START_STICKY
     }
 
-    private fun startAsForeground(withCamera: Boolean, withLocation: Boolean) {
+    private fun startAsForeground(withCamera: Boolean, withLocation: Boolean, withMic: Boolean = false) {
         val note = Notif.build(this, "Smart Protection chalu hai")
         val special = ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
-        if (withCamera || withLocation) {
+        micCapable = false
+        if (withCamera || withLocation || withMic) {
             var type = special
+            if (withMic) type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
             if (withCamera) type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
             if (withLocation) type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
             try {
                 startForeground(12, note, type)
                 cameraCapable = withCamera
+                micCapable = withMic
                 return
             } catch (e: Exception) {
                 Prefs.log(this, "Camera/location type foreground nahi mila: ${e.message}")
@@ -99,12 +107,15 @@ class GuardService : Service(), SensorEventListener {
     private fun startMotion() {
         val park = Prefs.parkOn(this)
         motionReason = if (park) "Phone ko haath lagaya gaya" else "Jhatka pakda gaya"
+        val prof = SensitivityProfile.forLevel(Prefs.sensitivity(this), park)
         detector = SnatchDetector(
-            threshold = if (park) 3f else Prefs.snatchThresholds[Prefs.sensitivity(this)],
-            armDelayMs = if (park) 10_000 else 5_000,
-            cooldownMs = 8_000,
+            threshold = prof.threshold,
+            armDelayMs = prof.armDelayMs,
+            cooldownMs = prof.cooldownMs,
             startMs = SystemClock.elapsedRealtime(),
-            minSamples = if (park) 2 else 3,
+            minSamples = prof.minSamples,
+            minDurationMs = prof.minDurationMs,
+            dipToleranceMs = prof.dipToleranceMs,
         )
         val linear = sensors.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
         val sensor = linear ?: sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
@@ -127,6 +138,25 @@ class GuardService : Service(), SensorEventListener {
         chargerReceiver = r
     }
 
+    private fun registerSim() {
+        if (simReceiver != null) return
+        val r = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                SimWatcher.check(context)
+            }
+        }
+        try {
+            registerReceiver(r, IntentFilter("android.intent.action.SIM_STATE_CHANGED"))
+            simReceiver = r
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun unregisterSim() {
+        simReceiver?.let { try { unregisterReceiver(it) } catch (_: Exception) {} }
+        simReceiver = null
+    }
+
     private fun unregisterCharger() {
         chargerReceiver?.let {
             try { unregisterReceiver(it) } catch (_: Exception) {}
@@ -147,9 +177,18 @@ class GuardService : Service(), SensorEventListener {
             sqrt(x * x + y * y + z * z)
         }
         if (Prefs.snoozed(this)) return
+        // Phone is open and in use: handling it is normal, not a snatch.
+        if (Prefs.ignoreWhileUnlocked(this) && !phoneLocked()) return
         if (detector?.onSample(mag, SystemClock.elapsedRealtime()) == true) {
             trigger(motionReason)
         }
+    }
+
+    private fun phoneLocked(): Boolean = try {
+        getSystemService(android.app.KeyguardManager::class.java).isDeviceLocked ||
+            getSystemService(android.app.KeyguardManager::class.java).isKeyguardLocked
+    } catch (_: Exception) {
+        true // unsure: stay protective
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
@@ -185,9 +224,11 @@ class GuardService : Service(), SensorEventListener {
     override fun onDestroy() {
         sensors.unregisterListener(this)
         unregisterCharger()
+        unregisterSim()
         if (instance === this) {
             instance = null
             cameraCapable = false
+            micCapable = false
         }
         super.onDestroy()
     }

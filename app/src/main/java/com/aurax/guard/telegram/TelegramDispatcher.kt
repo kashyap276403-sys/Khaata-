@@ -100,34 +100,70 @@ object TelegramDispatcher {
                 return
             }
 
+            val targets = TelegramConfig.targets(app)
+            val ids = targets.map { it.id }
             var sent = 0
             for (rec in due) {
-                when (val res = sendRecord(app, token, chat, label, rec)) {
-                    is TgResult.Ok -> {
-                        EventStore.update(app, rec.id) { it.copy(sent = true, lastError = "", nextTryMs = 0) }
-                        sent++
+                var done = TelegramRules.parseDone(rec.doneTo)
+                val hasAudio = rec.audioName != null && com.aurax.guard.AudioClip.file(app, rec.audioName).exists()
+                var stop = false
+                for (t in targets) {
+                    val primary = t.id == TelegramConfig.PRIMARY_ID
+                    var res: TgResult = TgResult.Ok
+                    if (!TelegramRules.msgDone(done, t.id)) {
+                        res = sendRecord(app, t.token, t.chatId, label, rec)
+                        if (res is TgResult.Ok) done = done + t.id
                     }
-                    is TgResult.Retry -> {
-                        val why = TelegramRules.redact(res.why, token)
-                        EventStore.update(app, rec.id) {
-                            it.copy(
-                                attempts = it.attempts + 1,
-                                lastError = why,
-                                nextTryMs = now + maxOf(res.afterMs, TelegramRules.backoffMs(it.attempts)),
-                            )
+                    if (res is TgResult.Ok && hasAudio && !TelegramRules.audioDone(done, t.id)) {
+                        res = sendAudio(app, t.token, t.chatId, label, rec)
+                        if (res is TgResult.Ok) done = done + "${t.id}:a"
+                    }
+                    val r = res
+                    val doneNow = TelegramRules.joinDone(done)
+                    when (r) {
+                        is TgResult.Ok -> {}
+                        is TgResult.Retry -> {
+                            val why = TelegramRules.redact(r.why, t.token)
+                            EventStore.update(app, rec.id) {
+                                it.copy(
+                                    doneTo = doneNow,
+                                    attempts = it.attempts + 1,
+                                    lastError = why,
+                                    nextTryMs = now + maxOf(r.afterMs, TelegramRules.backoffMs(it.attempts)),
+                                )
+                            }
+                            TelegramConfig.setStatus(app, "Ruka hua: $why")
+                            schedule(app)
+                            return
                         }
-                        TelegramConfig.setStatus(app, "Ruka hua: $why")
-                        schedule(app)
-                        return
-                    }
-                    is TgResult.Fail -> {
-                        val why = TelegramRules.redact(res.why, token)
-                        EventStore.update(app, rec.id) {
-                            it.copy(attempts = it.attempts + 1, lastError = why, nextTryMs = now + TelegramRules.backoffMs(it.attempts))
+                        is TgResult.Fail -> {
+                            val why = TelegramRules.redact(r.why, t.token)
+                            if (primary) {
+                                EventStore.update(app, rec.id) {
+                                    it.copy(doneTo = doneNow, attempts = it.attempts + 1, lastError = why,
+                                        nextTryMs = now + TelegramRules.backoffMs(it.attempts))
+                                }
+                                TelegramConfig.setStatus(app, "Fail: $why")
+                                if (r.global) return
+                                stop = true
+                            } else {
+                                // A wrong extra bot must never block the queue: give up on that target only, and say so.
+                                done = done + "${t.id}!"
+                                TelegramConfig.setExtraStatus(app, t.id, "Fail: $why")
+                            }
                         }
-                        TelegramConfig.setStatus(app, "Fail: $why")
-                        if (res.global) return
                     }
+                    if (stop) break
+                }
+                if (stop) continue
+                val fin = done
+                if (TelegramRules.complete(fin, ids, hasAudio)) {
+                    EventStore.update(app, rec.id) { it.copy(sent = true, doneTo = TelegramRules.joinDone(fin), lastError = "", nextTryMs = 0) }
+                    sent++
+                    targets.filter { it.id != TelegramConfig.PRIMARY_ID && TelegramRules.msgDone(fin, it.id) && "${it.id}!" !in fin }
+                        .forEach { TelegramConfig.setExtraStatus(app, it.id, "OK: aakhri alert gaya") }
+                } else {
+                    EventStore.update(app, rec.id) { it.copy(doneTo = TelegramRules.joinDone(fin)) }
                 }
             }
             if (sent > 0) {
@@ -136,6 +172,12 @@ object TelegramDispatcher {
             }
             if (hasWaiting(app)) schedule(app)
         }
+    }
+
+    private fun sendAudio(app: Context, token: String, chat: String, label: String, rec: EventRecord): TgResult {
+        val f = com.aurax.guard.AudioClip.file(app, rec.audioName ?: return TgResult.Ok)
+        val bytes = try { f.readBytes() } catch (_: Exception) { return TgResult.Ok }
+        return TelegramClient.sendAudioFile(token, chat, TelegramFormat.caption(label, rec).take(200) + "\n(Audio clip)", bytes, f.name, "audio/mp4")
     }
 
     private fun sendRecord(app: Context, token: String, chat: String, label: String, rec: EventRecord): TgResult {

@@ -30,6 +30,8 @@ class TelegramSettingsActivity : Activity() {
     private lateinit var queue: TextView
     private lateinit var master: Switch
     private var showing = false
+    private lateinit var audioInfo: TextView
+    private lateinit var extraCard: LinearLayout
     private val io = Executors.newSingleThreadExecutor()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -93,6 +95,38 @@ class TelegramSettingsActivity : Activity() {
         st.addView(Ui.button(c, "Ruki hui alerts dobara bhejein", Ui.Btn.GHOST, 6) { retryNow() })
         st.addView(Ui.button(c, "Saved token hatayein", Ui.Btn.DANGER, 6) { forgetToken() })
         root.addView(st)
+        // ---- alert extras: audio clip + SIM ----
+        val ex = Ui.card(c, null, 12)
+        ex.addView(Ui.text(c, "Extra alerts", 15f, bold = true))
+        ex.addView(Switch(c).apply {
+            text = "Audio clip (10-15 sec) har trigger par"
+            setTextColor(Color.WHITE)
+            isChecked = Prefs.audioOn(c)
+            setOnCheckedChangeListener { v, on ->
+                if (!v.isPressed) return@setOnCheckedChangeListener
+                Prefs.setAudioOn(c, on)
+                if (on && !com.aurax.guard.AudioClip.hasPermission(c)) {
+                    requestPermissions(arrayOf(android.Manifest.permission.RECORD_AUDIO), 7)
+                } else {
+                    restartGuard()
+                }
+                render()
+            }
+        })
+        audioInfo = Ui.dimText(c, "")
+        ex.addView(audioInfo)
+        ex.addView(Switch(c).apply {
+            text = "SIM badalne / nikalne par alert"
+            setTextColor(Color.WHITE)
+            isChecked = Prefs.simAlertOn(c)
+            setOnCheckedChangeListener { v, on -> if (v.isPressed) Prefs.setSimAlertOn(c, on) }
+        })
+        ex.addView(Ui.dimText(c, "SIM alert Telegram me 'Device: <label>' ke saath jata hai."))
+        root.addView(ex)
+
+        // ---- extra bots / chats ----
+        extraCard = Ui.card(c, null, 12)
+        root.addView(extraCard)
         root.addView(Ui.dimText(c, "Dhyan: alert me location aur photo Telegram ke through jati hai (end-to-end encrypted nahi). Dusre ke phone par ye sirf unki jaankari me lagayein.").apply { setPadding(0, Ui.dp(c, 12), 0, 0) })
         setContentView(ScrollView(c).apply { setBackgroundColor(Color.BLACK); isFillViewport = true; addView(root) })
         chat.setText(TelegramConfig.chatId(c))
@@ -177,8 +211,69 @@ class TelegramSettingsActivity : Activity() {
         render()
     }
 
+    private fun restartGuard() {
+        try { if (Prefs.guardOn(this)) com.aurax.guard.GuardService.start(this, fromUi = true) } catch (_: Exception) {}
+    }
+
+    override fun onRequestPermissionsResult(code: Int, perms: Array<out String>, results: IntArray) {
+        super.onRequestPermissionsResult(code, perms, results)
+        if (!com.aurax.guard.AudioClip.hasPermission(this)) {
+            Prefs.setAudioOn(this, false)
+            toast("Microphone permission nahi mili, audio clip band rahegi")
+        }
+        restartGuard()
+        recreate()
+    }
+
+    private fun renderExtras() {
+        val c = this
+        extraCard.removeAllViews()
+        extraCard.addView(Ui.text(c, "Extra bot / chat (optional)", 15f, bold = true))
+        extraCard.addView(Ui.dimText(c, "Primary ke saath har alert in jagah bhi jayega. Ek galat extra bot baaki alerts nahi rokta."))
+        TelegramConfig.extras(c).forEach { (id, name, chatId) ->
+            extraCard.addView(Ui.text(c, "$name  (chat $chatId, token ...${TelegramConfig.extraTail(c, id)})", 14f).apply { setPadding(0, Ui.dp(c, 10), 0, 0) })
+            val st = TelegramConfig.extraStatus(c, id)
+            if (st.isNotBlank()) extraCard.addView(Ui.dimText(c, st))
+            extraCard.addView(Ui.button(c, "Test bhejein", Ui.Btn.GHOST, 4) { testExtra(id) })
+            extraCard.addView(Ui.button(c, "Hatayein", Ui.Btn.DANGER, 4) { TelegramConfig.removeExtra(c, id); renderExtras() })
+        }
+        if (TelegramConfig.extras(c).size < TelegramConfig.MAX_EXTRA) {
+            val n = field(InputType.TYPE_CLASS_TEXT, "Naam (jaise Papa-bot)")
+            val t = field(InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD, "Extra BOT_TOKEN")
+            val ch = field(InputType.TYPE_CLASS_TEXT, "Extra CHAT_ID")
+            extraCard.addView(n); extraCard.addView(t); extraCard.addView(ch)
+            extraCard.addView(Ui.button(c, "Extra target jodein", Ui.Btn.PRIMARY, 8) {
+                when {
+                    !TelegramRules.isValidToken(t.text.toString()) -> toast("Extra BOT_TOKEN ka format galat hai")
+                    !TelegramRules.isValidChatId(ch.text.toString()) -> toast("Extra CHAT_ID sirf number hota hai")
+                    !TelegramConfig.addExtra(c, n.text.toString(), ch.text.toString(), t.text.toString()) -> toast("Jod nahi paya")
+                    else -> { toast("Extra target jud gaya"); TelegramDispatcher.kick(c); renderExtras() }
+                }
+            })
+        } else {
+            extraCard.addView(Ui.dimText(c, "Zyada se zyada ${TelegramConfig.MAX_EXTRA} extra targets."))
+        }
+    }
+
+    private fun testExtra(id: String) {
+        val app = applicationContext
+        val t = TelegramConfig.targets(app).firstOrNull { it.id == id } ?: return
+        io.execute {
+            val res = TelegramClient.sendMessage(t.token, t.chatId, TelegramFormat.test(TelegramConfig.label(app), System.currentTimeMillis()))
+            val msg = when (res) {
+                is TgResult.Ok -> "OK: test gaya"
+                is TgResult.Retry -> "Nahi gaya: " + TelegramRules.redact(res.why, t.token)
+                is TgResult.Fail -> "Fail: " + TelegramRules.redact(res.why, t.token)
+            }
+            TelegramConfig.setExtraStatus(app, id, msg)
+            runOnUiThread { if (!isDestroyed) renderExtras() }
+        }
+    }
+
     private fun render() {
         val c = this
+        audioInfo.text = com.aurax.guard.AudioClip.blocker(c) ?: "Audio clip taiyaar hai (clip Telegram par audio ki tarah jayegi)."
+        renderExtras()
         master.isChecked = TelegramConfig.enabled(c)
         val since = TelegramConfig.sinceMs(c)
         val all = try { EventStore.readAll(c) } catch (_: Exception) { emptyList() }
