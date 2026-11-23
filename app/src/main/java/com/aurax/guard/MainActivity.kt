@@ -458,6 +458,7 @@ class MainActivity : Activity(), HomeActions {
 
     override fun onResume() {
         super.onResume()
+        try { com.aurax.guard.telegram.TelegramDispatcher.kick(this) } catch (_: Exception) {}
         applySecure()
         showGate()
         ui.post(poll)
@@ -560,6 +561,7 @@ class MainActivity : Activity(), HomeActions {
 
     override fun openPhotos() = startActivity(Intent(this, PhotosActivity::class.java))
     override fun openQueue() = startActivity(Intent(this, EventsActivity::class.java))
+    override fun openAlerts() = startActivity(Intent(this, AlertSettingsActivity::class.java))
     override fun openAi() = startActivity(Intent(this, com.aurax.guard.ai.AiSettingsActivity::class.java))
     override fun openReadiness() = startActivity(Intent(this, com.aurax.guard.oem.OemReadinessActivity::class.java))
     override fun openTelegram() = startActivity(Intent(this, com.aurax.guard.telegram.TelegramSettingsActivity::class.java))

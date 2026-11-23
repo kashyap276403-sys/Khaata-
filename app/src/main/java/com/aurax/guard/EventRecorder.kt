@@ -37,6 +37,10 @@ object EventRecorder {
         onDone: ((EventRecord) -> Unit)? = null,
     ) {
         val app = ctx.applicationContext
+        if (!AlertTypes.allowed(app, reason)) {
+            Prefs.log(app, "Alert band hai (is type ke liye): $reason")
+            return
+        }
         val main = Handler(Looper.getMainLooper())
         val startMs = System.currentTimeMillis()
         val meta = DeviceInfo.read(app)
@@ -66,6 +70,7 @@ object EventRecorder {
                 reason = reason,
                 photoName = photoRef.get(),
                 audioName = audioRef.get(),
+                device = try { com.aurax.guard.telegram.TelegramConfig.label(app) } catch (_: Exception) { "" },
                 lat = fixRef.get()?.lat,
                 lon = fixRef.get()?.lon,
                 accuracyM = fixRef.get()?.accuracyM,

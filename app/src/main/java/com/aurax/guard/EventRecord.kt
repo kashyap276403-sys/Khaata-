@@ -35,6 +35,7 @@ data class EventRecord(
     val doneTo: String = "", // comma list of Telegram targets already served (no duplicates)
     val aiSummary: String = "", // optional AI line, filled once
     val aiTries: Int = 0,
+    val device: String = "", // device label when this alert was recorded (for filtering)
 ) {
     val mapsLink: String? get() = if (lat != null && lon != null) MapsLink.of(lat, lon) else null
 
@@ -58,6 +59,7 @@ data class EventRecord(
         put("tgDone", doneTo)
         put("ai", aiSummary)
         put("aiTry", aiTries)
+        put("dev", device)
     }.toString()
 
     /** Plain-text report (what a Telegram message would contain later). */
@@ -105,6 +107,7 @@ data class EventRecord(
                 doneTo = o.optString("tgDone", ""),
                 aiSummary = o.optString("ai", ""),
                 aiTries = o.optInt("aiTry", 0),
+                device = o.optString("dev", ""),
             )
         }
     }

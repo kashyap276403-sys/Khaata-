@@ -60,6 +60,14 @@ object Prefs {
     fun simLastAlertMs(c: Context) = p(c).getLong("sim_last", 0L)
     fun setSimLastAlertMs(c: Context, v: Long) = p(c).edit().putLong("sim_last", v).apply()
 
+    /** After the screen turns on/off or the phone is unlocked, ignore motion for this many seconds (placing the phone down, picking it up). */
+    fun graceSec(c: Context) = p(c).getInt("grace_sec", 10).coerceIn(3, 30)
+    fun setGraceSec(c: Context, v: Int) = p(c).edit().putInt("grace_sec", v.coerceIn(3, 30)).apply()
+
+    /** Per-type switch for recording/sending an alert (queue + Telegram). Detection itself has its own switches. */
+    fun alertTypeOn(c: Context, type: String) = bool(c, "al_$type", true)
+    fun setAlertTypeOn(c: Context, type: String, v: Boolean) = setBool(c, "al_$type", v)
+
     fun snoozeUntil(c: Context) = p(c).getLong("snooze_until", 0L)
     fun setSnoozeUntil(c: Context, v: Long) = p(c).edit().putLong("snooze_until", v).apply()
     fun snoozed(c: Context) = System.currentTimeMillis() < snoozeUntil(c)

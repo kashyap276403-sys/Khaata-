@@ -102,6 +102,7 @@ class HomeTab(
             Tile(android.R.drawable.ic_menu_gallery, "Photos", "Intruder photos", false) { actions.openPhotos() },
             Tile(android.R.drawable.ic_menu_view, "Alert queue", "GPS, battery, samay", false) { actions.openQueue() },
             Tile(android.R.drawable.ic_menu_send, "Telegram alerts", com.aurax.guard.telegram.TelegramConfig.summary(c).take(26), false) { actions.openTelegram() },
+            Tile(android.R.drawable.ic_lock_silent_mode, "Alert controls", if (Prefs.snoozed(c)) "Quiet chalu" else "Types, quiet timer", false) { actions.openAlerts() },
             Tile(android.R.drawable.ic_menu_help, "AI & Look", if (com.aurax.guard.ai.AiConfig.ready(c)) "AI chalu" else "AI band, glass, hints", false) { actions.openAi() },
             Tile(android.R.drawable.ic_menu_info_details, "Phone readiness", "Background / OEM check", false) { actions.openReadiness() },
             Tile(android.R.drawable.ic_menu_manage, "Protection settings", "PIN, siren, privacy", false) { actions.openControls() },
@@ -140,6 +141,30 @@ class HomeTab(
         }).apply { setPadding(0, Ui.dp(c, 10), 0, 0) })
         snap.addView(Ui.button(c, if (high == null) "Apps scan karein" else "Details dekhein", Ui.Btn.GHOST) { goGuard() })
         body.addView(snap)
+
+        // ---- system & bot health ----
+        body.addView(Ui.text(c, "System & Bot health", 17f, bold = true).apply { setPadding(0, Ui.dp(c, 20), 0, Ui.dp(c, 2)) })
+        try {
+            val checks = com.aurax.guard.health.HealthRules.build(com.aurax.guard.health.HealthCollector.collect(c))
+            val worst = when {
+                checks.any { it.level == com.aurax.guard.health.Level.BAD } -> Ui.red
+                checks.any { it.level == com.aurax.guard.health.Level.WARN } -> Ui.amber
+                else -> Ui.emerald
+            }
+            val hc = Ui.card(c, worst, 10)
+            hc.addView(Ui.text(c, com.aurax.guard.health.HealthRules.headline(checks), 16f, bold = true))
+            checks.forEach { k ->
+                val col = when (k.level) { com.aurax.guard.health.Level.OK -> Ui.emerald; com.aurax.guard.health.Level.WARN -> Ui.amber; else -> Ui.red }
+                val line = LinearLayout(c).apply { orientation = LinearLayout.VERTICAL; setPadding(0, Ui.dp(c, 4), 0, 0) }
+                line.addView(Ui.text(c, (when (k.level) { com.aurax.guard.health.Level.OK -> "OK  "; com.aurax.guard.health.Level.WARN -> "DHYAN  "; else -> "THEEK KAREIN  " }) + k.name, 14f, bold = true, color = col))
+                line.addView(Ui.dimText(c, k.detail, 12f))
+                hc.addView(line)
+            }
+            hc.addView(Ui.button(c, "Phone readiness kholein", Ui.Btn.GHOST, 10) { actions.openReadiness() })
+            body.addView(hc)
+        } catch (_: Exception) {
+            body.addView(Ui.dimText(c, "Health check abhi nahi chala."))
+        }
     }
 
     private data class Tile(val icon: Int, val title: String, val sub: String, val danger: Boolean, val onClick: () -> Unit)
@@ -158,8 +183,8 @@ class HomeTab(
                 setColorFilter(tint, PorterDuff.Mode.SRC_IN)
                 layoutParams = LinearLayout.LayoutParams(Ui.dp(c, 26), Ui.dp(c, 26))
             })
-            addView(Ui.text(c, t.title, 15f, bold = true).apply { setPadding(0, Ui.dp(c, 8), 0, 0) })
-            addView(Ui.dimText(c, t.sub, 12f))
+            addView(Ui.text(c, t.title, 15f, bold = true).apply { setPadding(0, Ui.dp(c, 8), 0, 0); maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END })
+            addView(Ui.dimText(c, t.sub, 12f).apply { maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END })
             setOnClickListener { t.onClick() }
         }
     }

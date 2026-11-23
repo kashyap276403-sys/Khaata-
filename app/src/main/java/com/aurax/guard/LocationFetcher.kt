@@ -53,7 +53,9 @@ object LocationFetcher {
                 if (best == null || l.time > best.time) best = l
             }
             val b = best ?: return null
-            return b to ((System.currentTimeMillis() - b.time) / 60_000)
+            val ageMin = (System.currentTimeMillis() - b.time) / 60_000
+            if (ageMin > 24 * 60) return null // a day-old position would mislead more than help
+            return b to ageMin
         }
 
         val providers = listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)

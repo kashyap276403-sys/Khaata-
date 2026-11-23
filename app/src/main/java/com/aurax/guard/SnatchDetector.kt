@@ -24,6 +24,13 @@ class SnatchDetector(
     private var runStartMs = Long.MIN_VALUE
     private var lastStrongMs = Long.MIN_VALUE
 
+    /** Forget any half-finished movement (used while the guard is deliberately ignoring motion). */
+    fun reset() {
+        run = 0
+        runStartMs = Long.MIN_VALUE
+        lastStrongMs = Long.MIN_VALUE
+    }
+
     fun onSample(magnitude: Float, nowMs: Long): Boolean {
         if (nowMs - startMs < armDelayMs) return false
         if (lastTriggerMs != Long.MIN_VALUE && nowMs - lastTriggerMs < cooldownMs) return false

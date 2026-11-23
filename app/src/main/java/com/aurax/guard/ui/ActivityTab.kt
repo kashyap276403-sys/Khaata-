@@ -15,6 +15,10 @@ import com.aurax.guard.permissions.RiskLevel
 
 /** Activity: timeline of alerts, system events and scan history, plus a shareable report. */
 class ActivityTab(private val act: Activity, private val openQueue: () -> Unit) {
+    private var typeFilter: String? = null
+    private var deviceFilter: String? = null
+    private var query = ""
+
     val root = ScrollView(act).apply { isFillViewport = true }
     private val body = LinearLayout(act).apply {
         orientation = LinearLayout.VERTICAL
@@ -38,10 +42,47 @@ class ActivityTab(private val act: Activity, private val openQueue: () -> Unit) 
         body.addView(Ui.button(c, "Poori alert queue (photo, GPS)", Ui.Btn.GHOST) { openQueue() })
 
         body.addView(Ui.text(c, "Alerts", 17f, bold = true).apply { setPadding(0, Ui.dp(c, 18), 0, Ui.dp(c, 2)) })
+
+        // ---- search + filters ----
+        val search = android.widget.EditText(c).apply {
+            hint = "Dhoondhein (naam, location, network...)"
+            setText(query)
+            setTextColor(android.graphics.Color.WHITE)
+            setHintTextColor(android.graphics.Color.argb(150, 255, 255, 255))
+            isSingleLine = true
+            imeOptions = android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH
+            setOnEditorActionListener { v, _, _ -> query = v.text.toString().trim(); refresh(); true }
+        }
+        body.addView(search)
+        val typeChips = mutableListOf(Ui.chip(c, "Sab", typeFilter == null) { typeFilter = null; refresh() })
+        com.aurax.guard.AlertType.values().forEach { t ->
+            if (alerts.any { com.aurax.guard.AlertType.classify(it.reason) == t }) typeChips.add(Ui.chip(c, t.title, typeFilter == t.key) { typeFilter = t.key; refresh() })
+        }
+        body.addView(Ui.chipRow(c, typeChips, 6))
+        val devices = (alerts.map { it.device } + listOf(com.aurax.guard.telegram.TelegramConfig.label(c))).filter { it.isNotBlank() }.distinct()
+        if (devices.size > 1 || deviceFilter != null) {
+            val dc = mutableListOf(Ui.chip(c, "Sab devices", deviceFilter == null) { deviceFilter = null; refresh() })
+            devices.forEach { d -> dc.add(Ui.chip(c, d, deviceFilter == d) { deviceFilter = d; refresh() }) }
+            body.addView(Ui.chipRow(c, dc, 4))
+        }
+        val shown = filtered(alerts)
         if (alerts.isEmpty()) {
             body.addView(Ui.dimText(c, "Abhi koi alert nahi. Home par 'Test Trigger' se try karein."))
+        } else if (shown.isEmpty()) {
+            body.addView(Ui.dimText(c, "Is filter/search se kuch nahi mila."))
+        } else {
+            body.addView(Ui.dimText(c, "${shown.size} / ${alerts.size} alerts", 12f))
         }
-        alerts.take(12).forEach { body.addView(alertCard(it)) }
+        shown.take(30).forEach { body.addView(alertCard(it)) }
+
+        // ---- copy / clear ----
+        val tools = Ui.card(c, null, 14)
+        tools.addView(Ui.text(c, "Log tools", 15f, bold = true))
+        tools.addView(Ui.button(c, "Summary copy karein", Ui.Btn.GHOST, 8) { copySummary(shown.ifEmpty { alerts }) })
+        tools.addView(Ui.button(c, "Bheji ja chuki / sirf-local alerts saaf karein", Ui.Btn.GHOST, 6) { confirmClearAlerts(alerts) })
+        tools.addView(Ui.button(c, "System events log saaf karein", Ui.Btn.DANGER, 6) { confirmClearLog() })
+        tools.addView(Ui.dimText(c, "Queue me jo alert abhi Telegram par bhejna baaki hai wo kabhi nahi hatayi jati."))
+        body.addView(tools)
 
         body.addView(Ui.text(c, "Scan history", 17f, bold = true).apply { setPadding(0, Ui.dp(c, 18), 0, Ui.dp(c, 2)) })
         val sc = Ui.card(c, null, 8)
@@ -64,6 +105,50 @@ class ActivityTab(private val act: Activity, private val openQueue: () -> Unit) 
         body.addView(ev)
     }
 
+    private fun filtered(all: List<EventRecord>): List<EventRecord> {
+        val q = query.lowercase()
+        return all.filter { r ->
+            (typeFilter == null || com.aurax.guard.AlertType.classify(r.reason).key == typeFilter) &&
+                (deviceFilter == null || r.device == deviceFilter) &&
+                (q.isEmpty() || (r.reason + " " + r.locationNote + " " + r.network + " " + r.device).lowercase().contains(q))
+        }
+    }
+
+    private fun copySummary(list: List<EventRecord>) {
+        val apps = AuditStore.apps?.filter { !it.facts.isSystem }
+        val text = ReportBuilder.build(System.currentTimeMillis(), list, AuditStore.count(RiskLevel.HIGH), AuditStore.count(RiskLevel.MEDIUM), apps?.size)
+        try {
+            act.getSystemService(android.content.ClipboardManager::class.java)
+                .setPrimaryClip(android.content.ClipData.newPlainText("auraX Guard summary", text))
+            Toast.makeText(act, "Summary copy ho gayi (isme location ho sakti hai)", Toast.LENGTH_SHORT).show()
+        } catch (_: Exception) {
+            Toast.makeText(act, "Copy nahi hui", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun confirmClearAlerts(all: List<EventRecord>) {
+        val cfg = com.aurax.guard.telegram.TelegramConfig
+        val since = cfg.sinceMs(act)
+        val removable = all.count { it.sent || !cfg.configured(act) || it.timeMs < since }
+        if (removable == 0) { Toast.makeText(act, "Saaf karne layak kuch nahi (baaki alerts bhejna baaki hain)", Toast.LENGTH_LONG).show(); return }
+        Ui.showGlass(android.app.AlertDialog.Builder(act)
+            .setTitle("$removable alerts saaf karein?")
+            .setMessage("Sirf wo alerts hatenge jo bheji ja chuki hain ya sirf phone me hain. Jo Telegram par bhejna baaki hain wo rahenge. Ye wapas nahi aayenge.")
+            .setPositiveButton("Haan, saaf karo") { _, _ ->
+                val n = EventStore.removeWhere(act) { it.sent || !cfg.configured(act) || it.timeMs < since }
+                Prefs.log(act, "Aapke kehne par $n purani alerts saaf ki")
+                refresh()
+            }.setNegativeButton("Nahi", null))
+    }
+
+    private fun confirmClearLog() {
+        Ui.showGlass(android.app.AlertDialog.Builder(act)
+            .setTitle("System events log saaf karein?")
+            .setMessage("Sirf ye text log (neeche 'System events') saaf hoga. Alerts aur photos nahi hatenge.")
+            .setPositiveButton("Haan") { _, _ -> Prefs.clearEvents(act); refresh() }
+            .setNegativeButton("Nahi", null))
+    }
+
     private fun alertCard(r: EventRecord): LinearLayout {
         val c = act
         val card = Ui.card(c, null, 10)
@@ -76,6 +161,8 @@ class ActivityTab(private val act: Activity, private val openQueue: () -> Unit) 
             val lbl = android.widget.TextView(ctx)
             lbl.text = "Device: " + cfg.label(ctx)
             lbl.textSize = 13f
+            lbl.maxLines = 1
+            lbl.ellipsize = android.text.TextUtils.TruncateAt.END
             lbl.setTextColor(android.graphics.Color.WHITE)
             lbl.setTypeface(lbl.typeface, android.graphics.Typeface.BOLD)
             rowv.addView(lbl, android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1f))

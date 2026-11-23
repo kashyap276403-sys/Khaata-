@@ -51,6 +51,8 @@ class GuardService : Service(), SensorEventListener {
     private var motionReason = "Jhatka pakda gaya"
     private var chargerReceiver: BroadcastReceiver? = null
     private var simReceiver: BroadcastReceiver? = null
+    private var screenReceiver: BroadcastReceiver? = null
+    @Volatile private var quietUntilElapsed = 0L
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -70,6 +72,7 @@ class GuardService : Service(), SensorEventListener {
         if (Prefs.snatchLockOn(this) || Prefs.parkOn(this)) startMotion()
         if (Prefs.chargerAlarmOn(this)) registerCharger()
         registerSim()
+        registerScreen()
         SimWatcher.check(this)
         Prefs.log(
             this,
@@ -138,6 +141,31 @@ class GuardService : Service(), SensorEventListener {
         chargerReceiver = r
     }
 
+    /** Screen on/off/unlock = the owner is handling the phone. Ignore motion for a few seconds afterwards. */
+    private fun registerScreen() {
+        if (screenReceiver != null) return
+        val r = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                quietUntilElapsed = SystemClock.elapsedRealtime() + Prefs.graceSec(context) * 1000L
+                detector?.reset()
+            }
+        }
+        try {
+            registerReceiver(r, IntentFilter().apply {
+                addAction(Intent.ACTION_SCREEN_OFF)
+                addAction(Intent.ACTION_SCREEN_ON)
+                addAction(Intent.ACTION_USER_PRESENT)
+            })
+            screenReceiver = r
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun unregisterScreen() {
+        screenReceiver?.let { try { unregisterReceiver(it) } catch (_: Exception) {} }
+        screenReceiver = null
+    }
+
     private fun registerSim() {
         if (simReceiver != null) return
         val r = object : BroadcastReceiver() {
@@ -176,10 +204,15 @@ class GuardService : Service(), SensorEventListener {
             val z = v[2] - gravity[2]
             sqrt(x * x + y * y + z * z)
         }
-        if (Prefs.snoozed(this)) return
-        // Phone is open and in use: handling it is normal, not a snatch.
-        if (Prefs.ignoreWhileUnlocked(this) && !phoneLocked()) return
-        if (detector?.onSample(mag, SystemClock.elapsedRealtime()) == true) {
+        val now = SystemClock.elapsedRealtime()
+        // Quiet time, a recent screen on/off/unlock (picking up or putting down), or phone open and in use: not a snatch.
+        if (Prefs.snoozed(this) || now < quietUntilElapsed ||
+            (Prefs.ignoreWhileUnlocked(this) && !phoneLocked())
+        ) {
+            detector?.reset()
+            return
+        }
+        if (detector?.onSample(mag, now) == true) {
             trigger(motionReason)
         }
     }
@@ -195,22 +228,29 @@ class GuardService : Service(), SensorEventListener {
 
     /** Lock the screen and (if enabled) sound the siren. */
     fun trigger(reason: String) {
-        val dpm = getSystemService(DevicePolicyManager::class.java)
-        val admin = ComponentName(this, GuardAdminReceiver::class.java)
-        val locked = if (dpm.isAdminActive(admin)) {
-            dpm.lockNow()
-            true
-        } else {
-            false
+        var locked = false
+        try {
+            val dpm = getSystemService(DevicePolicyManager::class.java)
+            val admin = ComponentName(this, GuardAdminReceiver::class.java)
+            if (dpm.isAdminActive(admin)) {
+                dpm.lockNow()
+                locked = true
+            }
+        } catch (e: Exception) {
+            Prefs.log(this, "Screen lock nahi hui (${e.javaClass.simpleName})")
         }
-        val siren = Prefs.sirenOn(this) && Siren.start(this)
+        val siren = try { Prefs.sirenOn(this) && Siren.start(this) } catch (e: Exception) { false }
         Prefs.log(
             this,
             "$reason: " + (if (locked) "screen lock kar di" else "Device Admin band, lock nahi hui") +
                 (if (siren) ", siren chalu" else ""),
         )
         // Also write photo-less metadata (GPS, battery, network, time) to the local queue.
-        EventRecorder.trigger(this, reason, reason, EventRecorder.PhotoMode.NONE)
+        try {
+            EventRecorder.trigger(this, reason, reason, EventRecorder.PhotoMode.NONE)
+        } catch (e: Exception) {
+            Prefs.log(this, "Alert queue me nahi gaya (${e.javaClass.simpleName})")
+        }
     }
 
     /** Called when a wrong password was entered. */
@@ -225,6 +265,7 @@ class GuardService : Service(), SensorEventListener {
         sensors.unregisterListener(this)
         unregisterCharger()
         unregisterSim()
+        unregisterScreen()
         if (instance === this) {
             instance = null
             cameraCapable = false

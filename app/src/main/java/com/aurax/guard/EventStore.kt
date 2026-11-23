@@ -45,21 +45,51 @@ object EventStore {
 
     fun pendingCount(ctx: Context) = readAll(ctx).count { !it.sent }
 
-    /** For the Telegram step later: marks an entry as delivered. */
-    @Synchronized
-    fun markSent(ctx: Context, id: String) {
-        val key = PhotoCrypto.keystoreKey()
-        val all = readAll(ctx).reversed().map { if (it.id == id) it.copy(sent = true) else it }
-        file(ctx).writeText(all.joinToString("") { encodeLine(key, it) + "\n" })
-    }
+    /** Marks an entry as delivered. */
+    fun markSent(ctx: Context, id: String) = update(ctx, id) { it.copy(sent = true) }
 
-    /** Changes one entry in place (used for Telegram retry bookkeeping). */
+    /**
+     * Changes one entry in place. Lines that cannot be read (for example after a
+     * Keystore problem) are kept exactly as they are instead of being lost.
+     */
     @Synchronized
     fun update(ctx: Context, id: String, change: (EventRecord) -> EventRecord) {
-        val all = readAll(ctx).reversed()
-        if (all.none { it.id == id }) return
-        val key = PhotoCrypto.keystoreKey()
-        file(ctx).writeText(all.joinToString("") { encodeLine(key, if (it.id == id) change(it) else it) + "\n" })
+        val f = file(ctx)
+        if (!f.exists()) return
+        val key = try { PhotoCrypto.keystoreKey() } catch (_: Exception) { return }
+        var hit = false
+        val out = f.readLines().filter { it.isNotBlank() }.map { line ->
+            val r = decodeLine(key, line)
+            if (r != null && r.id == id) { hit = true; encodeLine(key, change(r)) } else line
+        }
+        if (hit) writeAtomic(f, out)
+    }
+
+    /** Removes entries the user chose to clear (only those matching [pred]). Unreadable lines are kept. Returns how many were removed. */
+    @Synchronized
+    fun removeWhere(ctx: Context, pred: (EventRecord) -> Boolean): Int {
+        val f = file(ctx)
+        if (!f.exists()) return 0
+        val key = try { PhotoCrypto.keystoreKey() } catch (_: Exception) { return 0 }
+        var n = 0
+        val out = f.readLines().filter { it.isNotBlank() }.filter { line ->
+            val r = decodeLine(key, line)
+            val drop = r != null && pred(r)
+            if (drop) n++
+            !drop
+        }
+        if (n > 0) writeAtomic(f, out)
+        return n
+    }
+
+    /** Write to a temp file first so a crash mid-write cannot corrupt the queue. */
+    private fun writeAtomic(f: File, lines: List<String>) {
+        val tmp = File(f.parentFile, f.name + ".tmp")
+        tmp.writeText(if (lines.isEmpty()) "" else lines.joinToString("\n") + "\n")
+        if (!tmp.renameTo(f)) {
+            f.writeText(tmp.readText())
+            tmp.delete()
+        }
     }
 
     @Synchronized

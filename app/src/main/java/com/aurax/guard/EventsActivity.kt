@@ -90,6 +90,8 @@ class EventsActivity : Activity() {
             val lbl = TextView(ctx)
             lbl.text = "Device: " + cfg.label(ctx)
             lbl.textSize = 13f
+            lbl.maxLines = 1
+            lbl.ellipsize = android.text.TextUtils.TruncateAt.END
             lbl.setTextColor(android.graphics.Color.WHITE)
             lbl.setTypeface(lbl.typeface, android.graphics.Typeface.BOLD)
             rowv.addView(lbl, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))

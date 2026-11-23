@@ -137,7 +137,7 @@ class TelegramSettingsActivity : Activity() {
         inputType = type
         this.hint = hint
         setTextColor(Color.WHITE)
-        setHintTextColor(Color.argb(100, 255, 255, 255))
+        setHintTextColor(Color.argb(150, 255, 255, 255))
         isSingleLine = true
     }
 
