@@ -22,7 +22,9 @@ class SimAndTargetsTest {
         assertFalse(TelegramRules.complete(done, ids, false))
         assertTrue(TelegramRules.msgDone(done, "main"))
         done = done + "x1!"
-        assertTrue(TelegramRules.complete(done, ids, true))
+        assertTrue(TelegramRules.complete(done, ids, false))
+        assertFalse(TelegramRules.complete(done, ids, true)) // primary still needs its audio
+        assertTrue(TelegramRules.complete(done + "main:a", ids, true))
         assertFalse(TelegramRules.complete(setOf("main", "x1"), ids, true))
         assertEquals(setOf("a", "b"), TelegramRules.parseDone(TelegramRules.joinDone(setOf("b", "a"))))
     }
