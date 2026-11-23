@@ -107,6 +107,17 @@ class GuardService : Service(), SensorEventListener {
         }
     }
 
+    /** Re-reads sensitivity/grace without restarting the service (keeps camera/mic access). */
+    fun reloadMotion() {
+        try {
+            sensors.unregisterListener(this)
+            detector = null
+            if (Prefs.snatchLockOn(this) || Prefs.parkOn(this)) startMotion()
+        } catch (e: Exception) {
+            Prefs.log(this, "Motion reload nahi hua (${e.javaClass.simpleName})")
+        }
+    }
+
     private fun startMotion() {
         val park = Prefs.parkOn(this)
         motionReason = if (park) "Phone ko haath lagaya gaya" else "Jhatka pakda gaya"

@@ -115,6 +115,10 @@ class EventsActivity : Activity() {
                 14f,
             )
         )
+        com.aurax.guard.ui.Ui.riskBadge(this, r.risk)?.let { rb ->
+            c.addView(rb.apply { layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(6) } })
+        }
+        if (r.smart.isNotBlank()) c.addView(text("Smart: ${r.smart}", 13f, dim = true))
         if (r.photoName != null) c.addView(text("Photo: ${r.photoName}", 13f, dim = true))
         c.addView(text(if (r.sent) "Status: bhej di gayi" else "Status: queue me (abhi bhejna baaki)", 12f, dim = true))
         if (link != null) {

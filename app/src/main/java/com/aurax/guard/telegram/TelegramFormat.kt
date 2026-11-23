@@ -7,7 +7,8 @@ object TelegramFormat {
     /** Telegram allows 1024 characters in a photo/audio caption. */
     const val CAPTION_MAX = 1000
 
-    private fun aiLine(r: EventRecord) = if (r.aiSummary.isBlank()) "" else "\nAI: " + r.aiSummary
+    private fun aiLine(r: EventRecord) =
+        (if (r.smart.isBlank()) "" else "\nSmart: " + r.smart) + (if (r.aiSummary.isBlank()) "" else "\nAI: " + r.aiSummary)
 
     fun text(label: String, r: EventRecord) = "Device: $label\n" + r.report() + aiLine(r)
 

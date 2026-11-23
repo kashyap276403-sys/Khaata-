@@ -23,7 +23,7 @@ object Ui {
     val teal = Color.rgb(46, 196, 182)
     val amber = Color.rgb(255, 200, 87)
     val red = Color.rgb(255, 107, 107)
-    val dim = Color.argb(185, 255, 255, 255)
+    val dim = Color.argb(205, 255, 255, 255)
 
     enum class Btn { PRIMARY, GHOST, DANGER }
 
@@ -98,6 +98,14 @@ object Ui {
         }
     }
 
+    /** Low / Medium / High pill from the local smart engine (-1 = not assessed). */
+    fun riskBadge(c: Context, risk: Int) = when (risk) {
+        0 -> badge(c, "Risk: Low", emerald)
+        1 -> badge(c, "Risk: Medium", amber)
+        2 -> badge(c, "Risk: High", red)
+        else -> null
+    }
+
     /** Sent / Queued / Offline / Error pill for one alert. */
     fun statusBadge(c: Context, b: com.aurax.guard.telegram.Badge) = badge(c, b.label, when (b.kind) {
         com.aurax.guard.telegram.BadgeKind.SENT -> emerald
@@ -134,7 +142,8 @@ object Ui {
 
     fun card(c: Context, accent: Int? = null, topDp: Int = 12): LinearLayout = LinearLayout(c).apply {
         orientation = LinearLayout.VERTICAL
-        setPadding(dp(c, 16), dp(c, 14), dp(c, 16), dp(c, 14))
+        val pad = if (c.resources.configuration.screenWidthDp < 360) 12 else 16
+        setPadding(dp(c, pad), dp(c, 14), dp(c, pad), dp(c, 14))
         background = glass(c, 22, accent)
         layoutParams = lp(c, topDp)
     }
@@ -167,6 +176,7 @@ object Ui {
         textSize = 12f
         setTypeface(typeface, Typeface.BOLD)
         setTextColor(color)
+        maxLines = 1
         setPadding(dp(c, 10), dp(c, 3), dp(c, 10), dp(c, 3))
         background = GradientDrawable().apply {
             cornerRadius = dp(c, 12).toFloat()

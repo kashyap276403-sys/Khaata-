@@ -24,6 +24,9 @@ data class HealthInputs(
     val audioWanted: Boolean,
     val micPermission: Boolean,
     val guardOn: Boolean,
+    val smartOn: Boolean = true,
+    val autoTune: Boolean = false,
+    val quietOn: Boolean = false,
 )
 
 object HealthRules {
@@ -66,6 +69,8 @@ object HealthRules {
         out.add(if (i.notifications) Check("Notifications", Level.OK, "Allowed") else Check("Notifications", Level.WARN, "Band: siren stop button/status nahi dikhega"))
         if (i.audioWanted) out.add(if (i.micPermission) Check("Microphone", Level.OK, "Permission hai") else Check("Microphone", Level.BAD, "Audio chalu hai par permission nahi"))
         out.add(if (i.batteryUnrestricted) Check("Background (OEM)", Level.OK, "Battery restriction nahi") else Check("Background (OEM)", Level.WARN, "Battery optimization ON: guard band ho sakta hai. Phone readiness kholein"))
+        out.add(if (i.smartOn) Check("Smart engine", Level.OK, "Chalu (phone par, bina API key)" + if (i.autoTune) ", auto-adjust ON" else "") else Check("Smart engine", Level.WARN, "Band: alerts me risk/summary nahi judega"))
+        if (i.quietOn) out.add(Check("Quiet", Level.WARN, "Quiet chalu hai: jhatka/charger/siren ruke hain"))
         return out
     }
 

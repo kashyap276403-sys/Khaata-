@@ -64,7 +64,7 @@ object EventRecorder {
 
         fun finish() {
             if (!finished.compareAndSet(false, true)) return
-            val rec = EventRecord(
+            val rec0 = EventRecord(
                 id = UUID.randomUUID().toString(),
                 timeMs = startMs,
                 reason = reason,
@@ -79,8 +79,20 @@ object EventRecorder {
                 charging = meta.charging,
                 network = meta.network,
             )
+            var rec = rec0
+            try {
+                if (Prefs.smartOn(app)) {
+                    val earlier = try { EventStore.readAll(app) } catch (_: Exception) { emptyList() }
+                    val a = com.aurax.guard.smart.RiskEngine.assess(
+                        com.aurax.guard.smart.RiskEngine.inputFor(rec0, earlier, com.aurax.guard.ai.AiConfig.lang(app) == com.aurax.guard.ai.AiLang.ENGLISH),
+                    )
+                    rec = rec0.copy(smart = a.line(), risk = a.risk.ordinal)
+                }
+            } catch (_: Exception) {
+            }
             try {
                 EventStore.append(app, rec)
+                try { com.aurax.guard.smart.AutoTuner.maybeAuto(app) } catch (_: Exception) {}
                 Prefs.log(
                     app,
                     "Queue me save: $reason | " +

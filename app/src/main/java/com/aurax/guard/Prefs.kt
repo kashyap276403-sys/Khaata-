@@ -68,6 +68,21 @@ object Prefs {
     fun alertTypeOn(c: Context, type: String) = bool(c, "al_$type", true)
     fun setAlertTypeOn(c: Context, type: String, v: Boolean) = setBool(c, "al_$type", v)
 
+    /** Local Smart Engine (rules on the phone, no internet/API). ON by default. */
+    fun smartOn(c: Context) = bool(c, "smart_on", true)
+    fun setSmartOn(c: Context, v: Boolean) = setBool(c, "smart_on", v)
+
+    /** Let the smart engine make the motion guard gentler by itself when alerts look accidental. OFF by default. */
+    fun autoTune(c: Context) = bool(c, "auto_tune", false)
+    fun setAutoTune(c: Context, v: Boolean) = setBool(c, "auto_tune", v)
+    fun autoTuneLastMs(c: Context) = p(c).getLong("auto_last", 0L)
+    fun setAutoTuneLastMs(c: Context, v: Long) = p(c).edit().putLong("auto_last", v).apply()
+    fun autoNote(c: Context) = p(c).getString("auto_note", "") ?: ""
+    fun setAutoNote(c: Context, v: String) = p(c).edit().putString("auto_note", v).apply()
+    fun setAutoPrev(c: Context, level: Int, grace: Int) = p(c).edit().putInt("auto_prev_l", level).putInt("auto_prev_g", grace).apply()
+    fun autoPrev(c: Context): Pair<Int, Int>? = if (p(c).contains("auto_prev_l")) p(c).getInt("auto_prev_l", 1) to p(c).getInt("auto_prev_g", 10) else null
+    fun clearAutoPrev(c: Context) = p(c).edit().remove("auto_prev_l").remove("auto_prev_g").apply()
+
     fun snoozeUntil(c: Context) = p(c).getLong("snooze_until", 0L)
     fun setSnoozeUntil(c: Context, v: Long) = p(c).edit().putLong("snooze_until", v).apply()
     fun snoozed(c: Context) = System.currentTimeMillis() < snoozeUntil(c)

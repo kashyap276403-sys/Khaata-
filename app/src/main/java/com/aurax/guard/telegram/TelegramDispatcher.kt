@@ -105,7 +105,8 @@ object TelegramDispatcher {
             var sent = 0
             for (rec0 in due) {
                 // Optional AI line (once per alert). If AI is off/unreachable the alert simply goes without it.
-                val rec = try { com.aurax.guard.ai.AiSummarizer.ensure(app, rec0) } catch (_: Exception) { rec0 }
+                val withSmart = try { ensureSmart(app, rec0) } catch (_: Exception) { rec0 }
+                val rec = try { com.aurax.guard.ai.AiSummarizer.ensure(app, withSmart) } catch (_: Exception) { withSmart }
                 var done = TelegramRules.parseDone(rec.doneTo)
                 val hasAudio = rec.audioName != null && com.aurax.guard.AudioClip.file(app, rec.audioName).exists()
                 var stop = false
@@ -174,6 +175,17 @@ object TelegramDispatcher {
             }
             if (hasWaiting(app)) schedule(app)
         }
+    }
+
+    /** Local smart line for alerts saved before the engine existed. Pure rules, cannot fail the send. */
+    private fun ensureSmart(app: Context, r: EventRecord): EventRecord {
+        if (r.smart.isNotBlank() || !Prefs.smartOn(app)) return r
+        val earlier = EventStore.readAll(app).filter { it.timeMs < r.timeMs }
+        val a = com.aurax.guard.smart.RiskEngine.assess(
+            com.aurax.guard.smart.RiskEngine.inputFor(r, earlier, com.aurax.guard.ai.AiConfig.lang(app) == com.aurax.guard.ai.AiLang.ENGLISH),
+        )
+        EventStore.update(app, r.id) { it.copy(smart = a.line(), risk = a.risk.ordinal) }
+        return r.copy(smart = a.line(), risk = a.risk.ordinal)
     }
 
     private fun sendAudio(app: Context, token: String, chat: String, label: String, rec: EventRecord): TgResult {

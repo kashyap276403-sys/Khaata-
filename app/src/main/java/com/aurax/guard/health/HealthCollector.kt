@@ -44,6 +44,9 @@ object HealthCollector {
             audioWanted = Prefs.audioOn(c),
             micPermission = AudioClip.hasPermission(c),
             guardOn = Prefs.guardOn(c),
+            smartOn = Prefs.smartOn(c),
+            autoTune = Prefs.autoTune(c),
+            quietOn = Prefs.snoozed(c),
         )
     }
 }

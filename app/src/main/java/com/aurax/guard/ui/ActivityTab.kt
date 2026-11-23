@@ -18,6 +18,7 @@ class ActivityTab(private val act: Activity, private val openQueue: () -> Unit) 
     private var typeFilter: String? = null
     private var deviceFilter: String? = null
     private var query = ""
+    private var riskFilter: Int? = null
 
     val root = ScrollView(act).apply { isFillViewport = true }
     private val body = LinearLayout(act).apply {
@@ -59,6 +60,12 @@ class ActivityTab(private val act: Activity, private val openQueue: () -> Unit) 
             if (alerts.any { com.aurax.guard.AlertType.classify(it.reason) == t }) typeChips.add(Ui.chip(c, t.title, typeFilter == t.key) { typeFilter = t.key; refresh() })
         }
         body.addView(Ui.chipRow(c, typeChips, 6))
+        body.addView(Ui.chipRow(c, listOf(
+            Ui.chip(c, "Koi bhi risk", riskFilter == null) { riskFilter = null; refresh() },
+            Ui.chip(c, "High", riskFilter == 2) { riskFilter = 2; refresh() },
+            Ui.chip(c, "Medium", riskFilter == 1) { riskFilter = 1; refresh() },
+            Ui.chip(c, "Low", riskFilter == 0) { riskFilter = 0; refresh() },
+        ), 4))
         val devices = (alerts.map { it.device } + listOf(com.aurax.guard.telegram.TelegramConfig.label(c))).filter { it.isNotBlank() }.distinct()
         if (devices.size > 1 || deviceFilter != null) {
             val dc = mutableListOf(Ui.chip(c, "Sab devices", deviceFilter == null) { deviceFilter = null; refresh() })
@@ -110,6 +117,7 @@ class ActivityTab(private val act: Activity, private val openQueue: () -> Unit) 
         return all.filter { r ->
             (typeFilter == null || com.aurax.guard.AlertType.classify(r.reason).key == typeFilter) &&
                 (deviceFilter == null || r.device == deviceFilter) &&
+                (riskFilter == null || r.risk == riskFilter) &&
                 (q.isEmpty() || (r.reason + " " + r.locationNote + " " + r.network + " " + r.device).lowercase().contains(q))
         }
     }
@@ -175,6 +183,11 @@ class ActivityTab(private val act: Activity, private val openQueue: () -> Unit) 
             "Battery " + (if (r.batteryPct >= 0) "${r.batteryPct}%" else "?") + "  |  " + r.network.ifBlank { "network ?" } +
                 "  |  " + (if (r.mapsLink != null) "GPS mili" else "GPS nahi") +
                 (if (r.photoName != null) "  |  photo" else ""), 13f))
+        run {
+            val rb = Ui.riskBadge(c, r.risk)
+            if (rb != null) card.addView(rb.apply { layoutParams = Ui.lp(c, 6).apply { width = android.widget.LinearLayout.LayoutParams.WRAP_CONTENT } })
+            if (r.smart.isNotBlank()) card.addView(Ui.dimText(c, r.smart, 12f))
+        }
         val link = r.mapsLink
         if (link != null) {
             card.addView(Ui.button(c, "Maps me kholein", Ui.Btn.GHOST) {

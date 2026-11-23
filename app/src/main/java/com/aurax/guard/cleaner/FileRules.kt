@@ -60,6 +60,35 @@ object FileRules {
     }
 }
 
+/** Plain-language, offline explanation of why a file is shown. Advice only: it never selects or deletes. */
+object FileExplain {
+    fun explain(name: String, v: Verdict): String {
+        val base = when {
+            v.level == FileLevel.HIGH -> "Is file ke naam/type me shak wale sanket hain. Kholne ya install karne se pehle bharosemand source se match karein."
+            v.kind == FileKind.APK -> "Ye ek app installer hai. Agar aapne khud download nahi kiya ya source anjaan hai to install na karein."
+            v.kind == FileKind.TEMP -> "Aisi temporary/purani files aam taur par dobara ban jati hain, par pehle dekh lein ki zaroori to nahi."
+            v.kind == FileKind.LARGE -> "Badi file jagah ghere hai. Dekhein ki ab bhi kaam ki hai ya kahin aur backup hai."
+            v.level == FileLevel.MEDIUM -> "Ye chalne wali type ki file hai; zaroorat na ho to bhi pehle jaanch lein."
+            else -> "Aam file, koi khaas sanket nahi."
+        }
+        return "Salah: $base App khud kuch delete nahi karti, aap chunoge aur confirm karoge."
+    }
+
+    /** One line about the whole scan, e.g. "2 APK, 1 badi, 5 temp". */
+    fun overview(items: List<Verdict>): String {
+        val apk = items.count { it.kind == FileKind.APK }
+        val large = items.count { it.kind == FileKind.LARGE }
+        val temp = items.count { it.kind == FileKind.TEMP }
+        val risky = items.count { it.level == FileLevel.HIGH }
+        val parts = mutableListOf<String>()
+        if (risky > 0) parts.add("$risky risky")
+        if (apk > 0) parts.add("$apk APK")
+        if (large > 0) parts.add("$large badi")
+        if (temp > 0) parts.add("$temp temp")
+        return if (parts.isEmpty()) "Kuch khaas nahi mila." else "Mila: " + parts.joinToString(", ") + ". Pehle risky wali dekhein."
+    }
+}
+
 /** What the user ticked. Starts EMPTY: nothing is ever pre-selected or deleted automatically. */
 class Selection {
     private val ids = linkedSetOf<String>()

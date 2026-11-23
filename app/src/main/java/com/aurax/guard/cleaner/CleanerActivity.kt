@@ -131,6 +131,7 @@ class CleanerActivity : Activity() {
         prev.addView(Ui.text(c, "2. Preview: $source", 15f, bold = true))
         prev.addView(Ui.dimText(c, "${items.size} files mili, ${SizeFormat.bytes(items.sumOf { it.size })}. Dhyan wali: $risky." +
             if (items.size >= TreeScanner.MAX_ITEMS) " (Limit tak scan hua)" else ""))
+        prev.addView(Ui.dimText(c, FileExplain.overview(items.map { it.verdict })))
         val chips = listOf("ALL" to "Sab", "RISK" to "Risky", "APK" to "APK", "LARGE" to "Badi", "TEMP" to "Temp")
         prev.addView(Ui.chipRow(c, chips.map { (k, l) -> Ui.chip(c, l, filter == k) { filter = k; render() } }))
         body.addView(prev)
@@ -162,6 +163,7 @@ class CleanerActivity : Activity() {
             addView(Ui.dimText(c, "${SizeFormat.bytes(it.size)}  |  ${it.path}"))
             addView(Ui.badge(c, it.verdict.level.label, col).apply { layoutParams = Ui.lp(c, 4).apply { width = LinearLayout.LayoutParams.WRAP_CONTENT } })
             addView(Ui.dimText(c, it.verdict.reasons.joinToString("; ")))
+            addView(Ui.dimText(c, FileExplain.explain(it.name, it.verdict), 12f))
             if (com.aurax.guard.ai.AiConfig.ready(c)) {
                 addView(Ui.button(c, "AI se samjhao (sirf salah)", Ui.Btn.GHOST, 4) { explain(it) })
             }
