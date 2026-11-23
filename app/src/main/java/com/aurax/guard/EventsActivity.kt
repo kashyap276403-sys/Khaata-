@@ -46,7 +46,7 @@ class EventsActivity : Activity() {
         list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         root.addView(list)
         setContentView(ScrollView(this).apply {
-            setBackgroundColor(Color.BLACK)
+            background = com.aurax.guard.ui.Ui.backdrop(context)
             addView(root)
         })
     }

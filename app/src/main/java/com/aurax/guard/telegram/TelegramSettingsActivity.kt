@@ -128,7 +128,7 @@ class TelegramSettingsActivity : Activity() {
         extraCard = Ui.card(c, null, 12)
         root.addView(extraCard)
         root.addView(Ui.dimText(c, "Dhyan: alert me location aur photo Telegram ke through jati hai (end-to-end encrypted nahi). Dusre ke phone par ye sirf unki jaankari me lagayein.").apply { setPadding(0, Ui.dp(c, 12), 0, 0) })
-        setContentView(ScrollView(c).apply { setBackgroundColor(Color.BLACK); isFillViewport = true; addView(root) })
+        setContentView(ScrollView(c).apply { background = com.aurax.guard.ui.Ui.backdrop(context); isFillViewport = true; addView(root) })
         chat.setText(TelegramConfig.chatId(c))
         label.setText(TelegramConfig.rawLabel(c))
     }

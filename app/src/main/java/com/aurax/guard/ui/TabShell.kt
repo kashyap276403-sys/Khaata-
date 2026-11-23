@@ -46,7 +46,7 @@ class TabShell(private val act: Activity, controls: View, actions: HomeActions) 
 
     val root = LinearLayout(act).apply {
         orientation = LinearLayout.VERTICAL
-        background = GradientDrawable(
+        background = if (Ui.glassOn(act)) Ui.backdrop(act) else GradientDrawable(
             GradientDrawable.Orientation.TOP_BOTTOM,
             intArrayOf(Color.rgb(4, 38, 28), Color.BLACK, Color.BLACK),
         )

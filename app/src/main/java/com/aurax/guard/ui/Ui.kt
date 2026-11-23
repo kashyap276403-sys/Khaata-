@@ -5,6 +5,9 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
+import android.graphics.drawable.RippleDrawable
+import android.content.res.ColorStateList
+import java.util.concurrent.atomic.AtomicInteger
 import android.app.ActivityManager
 import android.app.AlertDialog
 import android.app.Dialog
@@ -44,7 +47,24 @@ object Ui {
      * a bright-to-faint hairline ring, and a frosted body that is lighter at the top (light catching the glass).
      * [tint] adds a soft colour glow. Flat fallback = the old look.
      */
-    fun glass(c: Context, radiusDp: Int, tint: Int? = null, strong: Boolean = false): android.graphics.drawable.Drawable {
+    private val dropSeed = AtomicInteger(7)
+
+    /** Soft pressed-water ripple on top of [content]. Uses Android's own ripple (no custom animation). Flat fallback = content. */
+    fun ripple(c: Context, radiusDp: Int, content: android.graphics.drawable.Drawable): android.graphics.drawable.Drawable =
+        if (!glassOn(c)) content else try {
+            RippleDrawable(
+                ColorStateList.valueOf(Color.argb(80, 220, 255, 245)), content,
+                GradientDrawable().apply { cornerRadius = dp(c, radiusDp).toFloat(); setColor(Color.WHITE) },
+            )
+        } catch (_: Exception) {
+            content
+        }
+
+    /** Window/screen background: soft colour glows behind the glass, or plain black when glass is off. */
+    fun backdrop(c: Context): android.graphics.drawable.Drawable =
+        if (glassOn(c)) LiquidBackdrop() else android.graphics.drawable.ColorDrawable(Color.BLACK)
+
+    fun glass(c: Context, radiusDp: Int, tint: Int? = null, strong: Boolean = false, drops: Int = 0): android.graphics.drawable.Drawable {
         val r = dp(c, radiusDp).toFloat()
         val tr = if (tint != null) Color.red(tint) else 255
         val tg = if (tint != null) Color.green(tint) else 255
@@ -63,7 +83,9 @@ object Ui {
         val body = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(
             Color.argb(topA, 255, 255, 255), Color.argb(if (tint != null) 30 else 16, tr, tg, tb), Color.argb(10, 255, 255, 255),
         )).apply { cornerRadius = (r - dp(c, 1)).coerceAtLeast(0f) }
-        return LayerDrawable(arrayOf(ring, body)).apply { setLayerInset(1, dp(c, 1), dp(c, 1), dp(c, 1), dp(c, 1)) }
+        val layers = if (drops > 0) arrayOf<android.graphics.drawable.Drawable>(ring, body, DropsDrawable(c, dropSeed.addAndGet(13).toLong(), drops))
+        else arrayOf<android.graphics.drawable.Drawable>(ring, body)
+        return LayerDrawable(layers).apply { setLayerInset(1, dp(c, 1), dp(c, 1), dp(c, 1), dp(c, 1)) }
     }
 
     /** Shows a dialog with a frosted look. Blur-behind only where Android allows it (12+), harmless elsewhere. */
@@ -144,7 +166,7 @@ object Ui {
         orientation = LinearLayout.VERTICAL
         val pad = if (c.resources.configuration.screenWidthDp < 360) 12 else 16
         setPadding(dp(c, pad), dp(c, 14), dp(c, pad), dp(c, 14))
-        background = glass(c, 22, accent)
+        background = glass(c, 22, accent, drops = if (accent != null) 3 else 2)
         layoutParams = lp(c, topDp)
     }
 
@@ -153,7 +175,7 @@ object Ui {
             text = label
             isAllCaps = false
             setTextColor(Color.WHITE)
-            background = GradientDrawable().apply {
+            background = ripple(c, 14, GradientDrawable().apply {
                 cornerRadius = dp(c, 14).toFloat()
                 when (style) {
                     Btn.PRIMARY -> {
@@ -166,7 +188,7 @@ object Ui {
                     }
                     Btn.DANGER -> setColor(Color.argb(130, 255, 90, 90))
                 }
-            }
+            })
             setOnClickListener { onClick() }
             layoutParams = lp(c, topDp)
         }

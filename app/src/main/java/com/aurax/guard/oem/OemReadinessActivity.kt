@@ -33,7 +33,7 @@ class OemReadinessActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             setPadding(Ui.dp(this@OemReadinessActivity, 16), Ui.dp(this@OemReadinessActivity, 24), Ui.dp(this@OemReadinessActivity, 16), Ui.dp(this@OemReadinessActivity, 48))
         }
-        setContentView(ScrollView(this).apply { setBackgroundColor(Color.BLACK); addView(body) })
+        setContentView(ScrollView(this).apply { background = com.aurax.guard.ui.Ui.backdrop(context); addView(body) })
     }
 
     override fun onResume() {

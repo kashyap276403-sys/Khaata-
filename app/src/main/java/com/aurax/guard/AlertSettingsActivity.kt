@@ -89,7 +89,7 @@ class AlertSettingsActivity : Activity() {
         sm.addView(smartBox)
         root.addView(sm)
 
-        setContentView(ScrollView(c).apply { setBackgroundColor(Color.BLACK); isFillViewport = true; addView(root) })
+        setContentView(ScrollView(c).apply { background = com.aurax.guard.ui.Ui.backdrop(context); isFillViewport = true; addView(root) })
         renderGrace()
         renderSmart()
     }

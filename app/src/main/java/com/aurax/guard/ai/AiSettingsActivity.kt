@@ -103,15 +103,15 @@ class AiSettingsActivity : Activity() {
 
         val look = Ui.card(c, null, 12)
         look.addView(Switch(c).apply {
-            text = "Liquid glass look"
+            text = "Liquid water-glass look (drops)"
             setTextColor(Color.WHITE)
             isChecked = Ui.glassOn(c)
             setOnCheckedChangeListener { v, on -> if (v.isPressed) { Ui.setGlass(c, on); toast("Agli baar screen kholne par poora lagega"); recreate() } }
         })
-        look.addView(Ui.dimText(c, "Halka frosted look, blur nahi lagta isliye battery par asar nahi. Phone dheema lage to band kar dein."))
+        look.addView(Ui.dimText(c, "Frosted glass, paani ki chhoti boondein aur halka colour glow. Animation ya blur nahi hai, isliye battery par asar nahi. Phone dheema lage to band kar dein."))
         root.addView(look)
 
-        setContentView(ScrollView(c).apply { setBackgroundColor(Color.BLACK); isFillViewport = true; addView(root) })
+        setContentView(ScrollView(c).apply { background = com.aurax.guard.ui.Ui.backdrop(context); isFillViewport = true; addView(root) })
     }
 
     private fun field(type: Int, hint: String) = EditText(this).apply {

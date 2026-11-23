@@ -44,7 +44,7 @@ class CleanerActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             setPadding(Ui.dp(this@CleanerActivity, 16), Ui.dp(this@CleanerActivity, 24), Ui.dp(this@CleanerActivity, 16), Ui.dp(this@CleanerActivity, 48))
         }
-        setContentView(ScrollView(this).apply { setBackgroundColor(Color.BLACK); addView(body) })
+        setContentView(ScrollView(this).apply { background = com.aurax.guard.ui.Ui.backdrop(context); addView(body) })
         render()
     }
 
