@@ -37,7 +37,7 @@ object EventRecorder {
         onDone: ((EventRecord) -> Unit)? = null,
     ) {
         val app = ctx.applicationContext
-        if (!AlertTypes.allowed(app, reason)) {
+        if (!AlertType.allowed(app, reason)) {
             Prefs.log(app, "Alert band hai (is type ke liye): $reason")
             return
         }
