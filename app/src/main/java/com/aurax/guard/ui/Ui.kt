@@ -91,15 +91,25 @@ object Ui {
         val pal = palette(c)
         val rs = pal.ringScale
         val ring = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(
-            Color.argb(((if (tint != null) 170 else 110) * rs).toInt(), tr, tg, tb), Color.argb((26 * rs).toInt(), 255, 255, 255), Color.argb(((if (tint != null) 90 else 55) * rs).toInt(), tr, tg, tb),
+            Color.argb(((if (tint != null) 190 else 150) * rs).toInt(), tr, tg, tb), Color.argb((18 * rs).toInt(), 255, 255, 255), Color.argb(((if (tint != null) 110 else 80) * rs).toInt(), tr, tg, tb),
         )).apply { cornerRadius = r }
         val topA = if (strong) pal.glassStrongAlpha else pal.glassTopAlpha
         val body = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(
             Color.argb(topA, 255, 255, 255), Color.argb(if (tint != null) 30 else 16, tr, tg, tb), Color.argb(10, 255, 255, 255),
         )).apply { cornerRadius = (r - dp(c, 1)).coerceAtLeast(0f) }
-        val layers = if (drops > 0) arrayOf<android.graphics.drawable.Drawable>(ring, body, DropsDrawable(c, dropSeed.addAndGet(13).toLong(), drops))
-        else arrayOf<android.graphics.drawable.Drawable>(ring, body)
-        return LayerDrawable(layers).apply { setLayerInset(1, dp(c, 1), dp(c, 1), dp(c, 1), dp(c, 1)) }
+        // thin gloss along the top edge, like light sliding over curved glass
+        val sheen = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(
+            Color.argb(((if (strong) 54 else 38) * rs).toInt(), 255, 255, 255), Color.argb(0, 255, 255, 255),
+        )).apply { cornerRadius = (r - dp(c, 4)).coerceAtLeast(0f) }
+        val layers = ArrayList<android.graphics.drawable.Drawable>()
+        layers.add(ring); layers.add(body); layers.add(sheen)
+        if (drops > 0) layers.add(DropsDrawable(c, dropSeed.addAndGet(13).toLong(), drops))
+        return LayerDrawable(layers.toTypedArray()).apply {
+            setLayerInset(1, dp(c, 1), dp(c, 1), dp(c, 1), dp(c, 1))
+            setLayerInset(2, dp(c, 6), dp(c, 3), dp(c, 6), 0)
+            setLayerGravity(2, android.view.Gravity.TOP or android.view.Gravity.FILL_HORIZONTAL)
+            setLayerHeight(2, dp(c, 26))
+        }
     }
 
     /** Shows a dialog with a frosted look. Blur-behind only where Android allows it (12+), harmless elsewhere. */
@@ -115,10 +125,10 @@ object Ui {
             val c = d.context
             val w = d.window ?: return
             val base = GradientDrawable().apply {
-                cornerRadius = dp(c, 24).toFloat()
+                cornerRadius = dp(c, 30).toFloat()
                 setColor(if (glassOn(c)) palette(c).dialogBase else Color.argb(245, 10, 26, 22))
             }
-            w.setBackgroundDrawable(LayerDrawable(arrayOf(base, glass(c, 24, strong = true))))
+            w.setBackgroundDrawable(LayerDrawable(arrayOf(base, glass(c, 30, strong = true))))
             if (glassOn(c) && Build.VERSION.SDK_INT >= 31) {
                 w.addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
                 w.attributes = w.attributes.apply { blurBehindRadius = 24 }
@@ -151,6 +161,18 @@ object Ui {
         com.aurax.guard.telegram.BadgeKind.LOCAL -> Color.argb(200, 255, 255, 255)
     })
 
+    /** iOS-style switch: bright thumb, emerald glass track when on, faint glass track when off. */
+    fun tintSwitch(sw: android.widget.Switch): android.widget.Switch {
+        try {
+            val on = intArrayOf(android.R.attr.state_checked)
+            val off = intArrayOf(-android.R.attr.state_checked)
+            sw.thumbTintList = ColorStateList(arrayOf(on, off), intArrayOf(Color.WHITE, Color.argb(235, 220, 230, 228)))
+            sw.trackTintList = ColorStateList(arrayOf(on, off), intArrayOf(Color.argb(210, 25, 190, 140), Color.argb(70, 255, 255, 255)))
+        } catch (_: Exception) {
+        }
+        return sw
+    }
+
     fun dp(c: Context, v: Int) = (v * c.resources.displayMetrics.density).toInt()
 
     fun lp(c: Context, topDp: Int = 0, weight: Float = 0f): LinearLayout.LayoutParams =
@@ -174,13 +196,17 @@ object Ui {
 
     fun dimText(c: Context, s: String, size: Float = 13f) = text(c, s, size, color = dim)
 
-    fun heading(c: Context, s: String) = text(c, s, 24f, bold = true).apply { setPadding(0, dp(c, 4), 0, dp(c, 2)) }
+    /** Large title in the iOS / OriginOS 7 style. */
+    fun heading(c: Context, s: String) = text(c, s, 30f, bold = true).apply {
+        letterSpacing = -0.02f
+        setPadding(dp(c, 2), dp(c, 8), 0, dp(c, 4))
+    }
 
     fun card(c: Context, accent: Int? = null, topDp: Int = 12): LinearLayout = LinearLayout(c).apply {
         orientation = LinearLayout.VERTICAL
         val pad = if (c.resources.configuration.screenWidthDp < 360) 12 else 16
         setPadding(dp(c, pad), dp(c, 14), dp(c, pad), dp(c, 14))
-        background = glass(c, 22, accent, drops = if (accent != null) 3 else 2)
+        background = glass(c, 28, accent, drops = if (accent != null) 3 else 2)
         layoutParams = lp(c, topDp)
     }
 
@@ -189,8 +215,8 @@ object Ui {
             text = label
             isAllCaps = false
             setTextColor(Color.WHITE)
-            background = ripple(c, 14, GradientDrawable().apply {
-                cornerRadius = dp(c, 14).toFloat()
+            background = ripple(c, 28, GradientDrawable().apply {
+                cornerRadius = dp(c, 28).toFloat() // pill: Android caps this at half the height
                 when (style) {
                     Btn.PRIMARY -> {
                         setColor(Color.argb(150, 25, 160, 120))
@@ -228,7 +254,7 @@ object Ui {
         if (selected) setTypeface(typeface, Typeface.BOLD)
         setPadding(dp(c, 14), dp(c, 8), dp(c, 14), dp(c, 8))
         background = GradientDrawable().apply {
-            cornerRadius = dp(c, 18).toFloat()
+            cornerRadius = dp(c, 40).toFloat()
             setColor(if (selected) Color.argb(140, 25, 160, 120) else Color.argb(20, 255, 255, 255))
             setStroke(dp(c, 1), if (selected) Color.argb(200, 25, 211, 160) else Color.argb(50, 255, 255, 255))
         }

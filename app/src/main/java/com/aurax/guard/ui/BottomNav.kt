@@ -18,8 +18,12 @@ class BottomNav(
 ) {
     val root = LinearLayout(c).apply {
         orientation = LinearLayout.HORIZONTAL
-        setPadding(Ui.dp(c, 8), Ui.dp(c, 8), Ui.dp(c, 8), Ui.dp(c, 8))
-        setBackgroundColor(Ui.palette(c).navBg)
+        setPadding(Ui.dp(c, 8), Ui.dp(c, 6), Ui.dp(c, 8), Ui.dp(c, 6))
+        // floating glass capsule: dark base for readable labels, glass on top
+        background = android.graphics.drawable.LayerDrawable(arrayOf(
+            GradientDrawable().apply { cornerRadius = Ui.dp(c, 36).toFloat(); setColor(Ui.palette(c).navBg and 0x00FFFFFF or (0xD0 shl 24)) },
+            Ui.glass(c, 36, strong = true),
+        ))
     }
     private val items = mutableListOf<Triple<LinearLayout, ImageView, TextView>>()
 
@@ -37,7 +41,7 @@ class BottomNav(
             val box = LinearLayout(c).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.CENTER
-                setPadding(0, Ui.dp(c, 6), 0, Ui.dp(c, 6))
+                setPadding(0, Ui.dp(c, 7), 0, Ui.dp(c, 7))
                 addView(icon)
                 addView(tv)
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
@@ -55,10 +59,7 @@ class BottomNav(
             val color = if (on) Ui.emerald else Ui.dim
             icon.setColorFilter(color, PorterDuff.Mode.SRC_IN)
             tv.setTextColor(color)
-            box.background = if (on) GradientDrawable().apply {
-                cornerRadius = Ui.dp(c, 16).toFloat()
-                setColor(Color.argb(45, 25, 211, 160))
-            } else null
+            box.background = if (on) Ui.glass(c, 28, Ui.emerald, strong = true) else null
         }
     }
 }

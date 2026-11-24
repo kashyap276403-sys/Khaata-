@@ -176,7 +176,7 @@ class HomeTab(
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.START
             setPadding(Ui.dp(c, 14), Ui.dp(c, 14), Ui.dp(c, 14), Ui.dp(c, 14))
-            background = Ui.ripple(c, 20, Ui.glass(c, 20, if (t.danger) Ui.red else null, strong = true, drops = 3))
+            background = Ui.ripple(c, 26, Ui.glass(c, 26, if (t.danger) Ui.red else null, strong = true, drops = 3))
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             addView(ImageView(c).apply {
                 setImageResource(t.icon)

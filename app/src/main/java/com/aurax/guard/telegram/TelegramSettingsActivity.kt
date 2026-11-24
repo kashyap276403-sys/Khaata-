@@ -66,7 +66,7 @@ class TelegramSettingsActivity : Activity() {
         root.addView(form)
 
         val sw = Ui.card(c, null, 12)
-        master = Switch(c).apply {
+        master = Ui.tintSwitch(Switch(c)).apply {
             text = "Telegram alerts chalu"
             setTextColor(Color.WHITE)
             setOnCheckedChangeListener { v, on ->
@@ -98,7 +98,7 @@ class TelegramSettingsActivity : Activity() {
         // ---- alert extras: audio clip + SIM ----
         val ex = Ui.card(c, null, 12)
         ex.addView(Ui.text(c, "Extra alerts", 15f, bold = true))
-        ex.addView(Switch(c).apply {
+        ex.addView(Ui.tintSwitch(Switch(c)).apply {
             text = "Audio clip (10-15 sec) har trigger par"
             setTextColor(Color.WHITE)
             isChecked = Prefs.audioOn(c)
@@ -115,7 +115,7 @@ class TelegramSettingsActivity : Activity() {
         })
         audioInfo = Ui.dimText(c, "")
         ex.addView(audioInfo)
-        ex.addView(Switch(c).apply {
+        ex.addView(Ui.tintSwitch(Switch(c)).apply {
             text = "SIM badalne / nikalne par alert"
             setTextColor(Color.WHITE)
             isChecked = Prefs.simAlertOn(c)

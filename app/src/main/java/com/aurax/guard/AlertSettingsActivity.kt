@@ -111,7 +111,7 @@ class AlertSettingsActivity : Activity() {
         }
     }
 
-    private fun sw(text: String, read: () -> Boolean, on: (Boolean) -> Unit) = Switch(this).apply {
+    private fun sw(text: String, read: () -> Boolean, on: (Boolean) -> Unit) = Ui.tintSwitch(Switch(this)).apply {
         this.text = text
         textSize = 15f
         setTextColor(Color.WHITE)

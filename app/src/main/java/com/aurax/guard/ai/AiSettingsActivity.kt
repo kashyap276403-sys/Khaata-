@@ -62,7 +62,7 @@ class AiSettingsActivity : Activity() {
         root.addView(ai)
 
         val opt = Ui.card(c, null, 12)
-        master = Switch(c).apply {
+        master = Ui.tintSwitch(Switch(c)).apply {
             text = "AI summary chalu"
             setTextColor(Color.WHITE)
             setOnCheckedChangeListener { v, on ->
@@ -74,7 +74,7 @@ class AiSettingsActivity : Activity() {
         opt.addView(Ui.text(c, "Bhasha / style", 13f, color = Ui.dim).apply { setPadding(0, Ui.dp(c, 8), 0, 0) })
         chips = LinearLayout(c).apply { orientation = LinearLayout.VERTICAL }
         opt.addView(chips)
-        opt.addView(Switch(c).apply {
+        opt.addView(Ui.tintSwitch(Switch(c)).apply {
             text = "AI ko Google Maps link bhi bhejein"
             setTextColor(Color.WHITE)
             isChecked = AiConfig.shareLink(c)
@@ -102,7 +102,7 @@ class AiSettingsActivity : Activity() {
         root.addView(dx)
 
         val look = Ui.card(c, null, 12)
-        look.addView(Switch(c).apply {
+        look.addView(Ui.tintSwitch(Switch(c)).apply {
             text = "Liquid water-glass look (drops)"
             setTextColor(Color.WHITE)
             isChecked = Ui.glassOn(c)

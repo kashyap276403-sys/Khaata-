@@ -48,7 +48,10 @@ class TabShell(private val act: Activity, controls: View, actions: HomeActions) 
         orientation = LinearLayout.VERTICAL
         background = if (Ui.glassOn(act)) Ui.backdrop(act) else Ui.flatGradient(act)
         addView(frame, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
-        addView(nav.root)
+        addView(nav.root, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            val m = Ui.dp(act, 14)
+            setMargins(m, Ui.dp(act, 4), m, Ui.dp(act, 12))
+        })
     }
 
     private var index = 0

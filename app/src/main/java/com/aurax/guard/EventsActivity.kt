@@ -75,7 +75,7 @@ class EventsActivity : Activity() {
         val c = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(14), dp(12), dp(14), dp(12))
-            background = com.aurax.guard.ui.Ui.glass(this@EventsActivity, 20)
+            background = com.aurax.guard.ui.Ui.glass(this@EventsActivity, 26)
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT,

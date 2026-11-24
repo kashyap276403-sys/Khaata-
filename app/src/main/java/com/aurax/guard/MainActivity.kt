@@ -702,7 +702,7 @@ class MainActivity : Activity(), HomeActions {
 
     /** A switch whose value is re-read from settings whenever the screen refreshes. */
     private fun toggle(text: String, read: () -> Boolean, onChange: (Boolean) -> Unit): Switch {
-        val sw = Switch(this)
+        val sw = com.aurax.guard.ui.Ui.tintSwitch(Switch(this))
         sw.text = text
         sw.textSize = 15f
         sw.setTextColor(Color.WHITE)
