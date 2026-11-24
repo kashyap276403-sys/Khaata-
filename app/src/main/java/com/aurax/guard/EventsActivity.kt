@@ -115,7 +115,7 @@ class EventsActivity : Activity() {
                 14f,
             )
         )
-        com.aurax.guard.ui.Ui.riskBadge(this, r.risk)?.let { rb ->
+        com.aurax.guard.ui.Ui.riskBadge(this, r.risk, r.threat)?.let { rb ->
             c.addView(rb.apply { layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(6) } })
         }
         if (r.smart.isNotBlank()) c.addView(text("Smart: ${r.smart}", 13f, dim = true))

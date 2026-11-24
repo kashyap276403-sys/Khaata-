@@ -7,6 +7,8 @@ enum class AlertType(val key: String, val title: String) {
     WRONG_UNLOCK("wrong", "Galat password / PIN"),
     SIM("sim", "SIM badli"),
     BATTERY("battery", "Battery bahut kam"),
+    TRACE("trace", "Emergency trace"),
+    DIGEST("digest", "Digest / heartbeat"),
     MANUAL("manual", "Test / Panic"),
     OTHER("other", "Anya");
 
@@ -16,6 +18,8 @@ enum class AlertType(val key: String, val title: String) {
             return when {
                 r.startsWith("sim") -> SIM
                 r.startsWith("battery") -> BATTERY
+                r.startsWith("emergency") || r.startsWith("guard boost") -> TRACE
+                r.startsWith("daily digest") || r.startsWith("heartbeat") -> DIGEST
                 "jhatka" in r || "haath lagaya" in r -> MOTION
                 "charger" in r -> CHARGER
                 "galat" in r -> WRONG_UNLOCK
@@ -28,7 +32,7 @@ enum class AlertType(val key: String, val title: String) {
         fun allowed(c: android.content.Context, reason: String): Boolean {
             val t = classify(reason)
             return when (t) {
-                MANUAL, OTHER -> true
+                MANUAL, OTHER, TRACE, DIGEST -> true
                 SIM -> Prefs.simAlertOn(c)
                 BATTERY -> Prefs.batteryAlertOn(c)
                 else -> Prefs.alertTypeOn(c, t.key)

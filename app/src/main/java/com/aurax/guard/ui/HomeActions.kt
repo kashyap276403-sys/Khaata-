@@ -11,6 +11,7 @@ interface HomeActions {
     fun openTelegram()
     fun openReadiness()
     fun openAi()
+    fun openEmergency() {}
     fun openAlerts()
     fun openControls()
     fun stopSiren()

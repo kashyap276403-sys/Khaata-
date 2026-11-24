@@ -175,11 +175,14 @@ object Ui {
     }
 
     /** Low / Medium / High pill from the local smart engine (-1 = not assessed). */
-    fun riskBadge(c: Context, risk: Int) = when (risk) {
-        0 -> badge(c, "Risk: Low", emerald)
-        1 -> badge(c, "Risk: Medium", amber)
-        2 -> badge(c, "Risk: High", red)
+    fun riskBadge(c: Context, risk: Int, threat: Int = -1): TextView? {
+        val t = if (threat >= 0) " $threat/100" else ""
+        return when (risk) {
+        0 -> badge(c, "Risk: Low$t", emerald)
+        1 -> badge(c, "Risk: Medium$t", amber)
+        2 -> badge(c, "Risk: High$t", red)
         else -> null
+        }
     }
 
     /** Sent / Queued / Offline / Error pill for one alert. */

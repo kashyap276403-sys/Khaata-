@@ -10,11 +10,13 @@ object TelegramFormat {
     private fun aiLine(r: EventRecord) =
         (if (r.smart.isBlank()) "" else "\nSmart: " + r.smart) + (if (r.aiSummary.isBlank()) "" else "\nAI: " + r.aiSummary)
 
-    fun text(label: String, r: EventRecord) = "Device: $label\n" + r.report() + aiLine(r)
+    private fun extraLine(r: EventRecord) = if (r.extra.isBlank()) "" else "\n" + r.extra
+
+    fun text(label: String, r: EventRecord) = "Device: $label\n" + r.report() + extraLine(r) + aiLine(r)
 
     fun caption(label: String, r: EventRecord): String {
         val ai = aiLine(r)
-        val head = "Device: $label\n" + r.report()
+        val head = "Device: $label\n" + r.report() + extraLine(r)
         val room = CAPTION_MAX - ai.length
         return (if (head.length > room) head.take(room - 3) + "..." else head) + ai
     }

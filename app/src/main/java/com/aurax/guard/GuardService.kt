@@ -1,5 +1,6 @@
 package com.aurax.guard
 
+import com.aurax.guard.smart.SmartPrefs
 import android.Manifest
 import android.app.Service
 import android.app.admin.DevicePolicyManager
@@ -53,6 +54,8 @@ class GuardService : Service(), SensorEventListener {
     private var simReceiver: BroadcastReceiver? = null
     private var screenReceiver: BroadcastReceiver? = null
     private var batteryReceiver: BroadcastReceiver? = null
+    private var levelReceiver: BroadcastReceiver? = null
+    @Volatile private var plugged = false
     @Volatile private var quietUntilElapsed = 0L
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -73,6 +76,8 @@ class GuardService : Service(), SensorEventListener {
         if (Prefs.snatchLockOn(this) || Prefs.parkOn(this)) startMotion()
         if (Prefs.chargerAlarmOn(this)) registerCharger()
         registerSim()
+        registerLevel()
+        com.aurax.guard.smart.SmartScheduler.arm(this)
         registerScreen()
         registerBattery()
         SimWatcher.check(this)
@@ -202,6 +207,37 @@ class GuardService : Service(), SensorEventListener {
         }
     }
 
+    /** Tracks charging state (for "ignore while charging") and feeds Emergency Trace. */
+    private fun registerLevel() {
+        if (levelReceiver != null) return
+        val r = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                try {
+                    val level = intent.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1)
+                    val scale = intent.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, 100)
+                    val st = intent.getIntExtra(android.os.BatteryManager.EXTRA_STATUS, -1)
+                    plugged = intent.getIntExtra(android.os.BatteryManager.EXTRA_PLUGGED, 0) != 0
+                    val pct = if (level >= 0 && scale > 0) level * 100 / scale else -1
+                    if (SmartPrefs.traceOn(context) || SmartPrefs.state(context).active) {
+                        val chg = plugged || st == android.os.BatteryManager.BATTERY_STATUS_CHARGING
+                        Thread { try { com.aurax.guard.smart.TraceEngine.onBattery(context, pct, chg) } catch (_: Exception) {} }.start()
+                    }
+                } catch (_: Exception) {
+                }
+            }
+        }
+        try {
+            registerReceiver(r, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+            levelReceiver = r
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun unregisterLevel() {
+        levelReceiver?.let { try { unregisterReceiver(it) } catch (_: Exception) {} }
+        levelReceiver = null
+    }
+
     private fun unregisterBattery() {
         batteryReceiver?.let { try { unregisterReceiver(it) } catch (_: Exception) {} }
         batteryReceiver = null
@@ -247,7 +283,7 @@ class GuardService : Service(), SensorEventListener {
         }
         val now = SystemClock.elapsedRealtime()
         // Quiet time, a recent screen on/off/unlock (picking up or putting down), or phone open and in use: not a snatch.
-        if (Prefs.snoozed(this) || now < quietUntilElapsed ||
+        if (Prefs.snoozed(this) || now < quietUntilElapsed || (plugged && SmartPrefs.ignoreCharging(this)) ||
             (Prefs.ignoreWhileUnlocked(this) && !phoneLocked())
         ) {
             detector?.reset()
@@ -280,7 +316,7 @@ class GuardService : Service(), SensorEventListener {
         } catch (e: Exception) {
             Prefs.log(this, "Screen lock nahi hui (${e.javaClass.simpleName})")
         }
-        val siren = try { Prefs.sirenOn(this) && Siren.start(this) } catch (e: Exception) { false }
+        val siren = try { Prefs.sirenOn(this) && !SmartPrefs.stealth(this) && Siren.start(this) } catch (e: Exception) { false }
         Prefs.log(
             this,
             "$reason: " + (if (locked) "screen lock kar di" else "Device Admin band, lock nahi hui") +
@@ -308,6 +344,7 @@ class GuardService : Service(), SensorEventListener {
         unregisterSim()
         unregisterScreen()
         unregisterBattery()
+        unregisterLevel()
         if (instance === this) {
             instance = null
             cameraCapable = false

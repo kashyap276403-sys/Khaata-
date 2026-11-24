@@ -15,7 +15,7 @@ class GuardAdminReceiver : DeviceAdminReceiver() {
     @Deprecated("Android still calls this for wrong lock-screen attempts")
     override fun onPasswordFailed(context: Context, intent: Intent) {
         val n = Prefs.bumpFailures(context)
-        if (Prefs.sirenOn(context) && n >= 3 && !Prefs.snoozed(context)) {
+        if (Prefs.sirenOn(context) && !com.aurax.guard.smart.SmartPrefs.stealth(context) && n >= 3 && !Prefs.snoozed(context)) {
             Siren.start(context)
             Prefs.log(context, "3 galat koshish: siren chalu")
         }

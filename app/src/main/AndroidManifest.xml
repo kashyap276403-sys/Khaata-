@@ -47,6 +47,14 @@
             android:name=".telegram.TelegramSettingsActivity"
             android:exported="false" />
 
+        <receiver
+            android:name=".smart.SmartAlarmReceiver"
+            android:exported="false" />
+
+        <activity
+            android:name=".smart.EmergencySettingsActivity"
+            android:exported="false" />
+
         <service
             android:name=".telegram.RetryJobService"
             android:exported="false"

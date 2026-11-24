@@ -34,6 +34,8 @@ data class Assessment(
     val actions: List<String>,
     val falseTriggerLikely: Boolean,
     val movedMeters: Int?,
+    val threat: Int = 0, // 0-100: Low 0-34, Medium 35-69, High 70-100
+    val signals: List<String> = emptyList(),
 ) {
     /** Short text for Telegram: risk + first sentence + the top action. */
     fun line(max: Int = 240): String {
@@ -52,6 +54,13 @@ object RiskEngine {
     private const val MIN = 60_000L
     private const val HOUR = 60 * MIN
     private const val DAY = 24 * HOUR
+
+    /** Maps the rule score onto 0-100 so the bands always agree with the Low/Medium/High label. */
+    fun threatOf(risk: Risk, score: Int, falseLikely: Boolean): Int = when (risk) {
+        Risk.HIGH -> (70 + (score - 3).coerceAtLeast(0) * 8).coerceAtMost(100)
+        Risk.MEDIUM -> (35 + (score - 1).coerceAtLeast(0) * 15).coerceAtMost(69)
+        Risk.LOW -> if (falseLikely) 8 else (score.coerceAtLeast(0) * 10).coerceAtMost(30)
+    }
 
     fun distanceM(aLat: Double, aLon: Double, bLat: Double, bLon: Double): Double {
         val r = 6_371_000.0
@@ -92,7 +101,7 @@ object RiskEngine {
         if (wrongHour >= 3) score++
         if (movedFar) score++
         if (simHour && wrongHour > 0 && i.type != AlertType.MANUAL) score += 2
-        if (night && i.type != AlertType.MANUAL && i.type != AlertType.MOTION) score++
+        if (night && i.type != AlertType.MANUAL && i.type != AlertType.MOTION && i.type != AlertType.TRACE && i.type != AlertType.DIGEST) score++
         if (i.type == AlertType.MOTION) {
             // a jerk alone is weak evidence; it only matters when something else points to a real theft
             val corroborated = movedFar || wrongHour > 0 || simHour
@@ -102,7 +111,8 @@ object RiskEngine {
 
         val corroboratedAny = movedFar || wrongHour > 0 || simHour
         val falseLikely = i.type == AlertType.MOTION && sameDay + 1 >= 4 && !corroboratedAny
-        val risk = if (falseLikely) Risk.LOW else when {
+        val routine = i.type == AlertType.DIGEST
+        val risk = if (falseLikely || routine) Risk.LOW else when {
             score >= 3 -> Risk.HIGH
             score >= 1 -> Risk.MEDIUM
             else -> Risk.LOW
@@ -145,7 +155,15 @@ object RiskEngine {
         if (i.batteryPct in 0..15 && !i.charging) actions.add(t("Battery kam hai: jaldi dhyan dein", "Battery is low: act soon"))
         if (i.type == AlertType.BATTERY) actions.add(0, t("Phone ka ye aakhri location hai: Maps me dekhein", "This is the phone's last known location: check the map"))
         if (i.lat == null && i.type != AlertType.MANUAL) actions.add(t("Phone ki Location ON rakhein", "Keep phone Location ON"))
-        return Assessment(risk, s.toString().trim(), actions, falseLikely, moved)
+        val signals = mutableListOf<String>()
+        signals.add(i.type.title)
+        if (movedFar) signals.add("moved")
+        if (wrongHour > 0) signals.add("wrong-password")
+        if (simHour) signals.add("sim")
+        if (night) signals.add("night")
+        if (recent15 >= 3) signals.add("burst")
+        if (i.lat == null) signals.add("no-location")
+        return Assessment(risk, s.toString().trim(), actions, falseLikely, moved, threatOf(risk, if (routine) 0 else score, falseLikely), signals)
     }
 
     fun inputFor(r: EventRecord, earlier: List<EventRecord>, english: Boolean = false): SmartInput {

@@ -38,6 +38,8 @@ data class EventRecord(
     val device: String = "", // device label when this alert was recorded (for filtering)
     val smart: String = "", // local smart engine line
     val risk: Int = -1, // 0 low, 1 medium, 2 high, -1 unknown
+    val threat: Int = -1, // 0-100 threat score, -1 unknown
+    val extra: String = "", // trail / digest text
 ) {
     val mapsLink: String? get() = if (lat != null && lon != null) MapsLink.of(lat, lon) else null
 
@@ -64,6 +66,8 @@ data class EventRecord(
         put("dev", device)
         put("sm", smart)
         put("rk", risk)
+        put("th", threat)
+        put("ex", extra)
     }.toString()
 
     /** Plain-text report (what a Telegram message would contain later). */
@@ -114,6 +118,8 @@ data class EventRecord(
                 device = o.optString("dev", ""),
                 smart = o.optString("sm", ""),
                 risk = o.optInt("rk", -1),
+                threat = o.optInt("th", -1),
+                extra = o.optString("ex", ""),
             )
         }
     }

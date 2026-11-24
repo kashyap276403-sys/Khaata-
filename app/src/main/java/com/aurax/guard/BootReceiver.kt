@@ -11,6 +11,7 @@ class BootReceiver : BroadcastReceiver() {
         try { com.aurax.guard.telegram.TelegramDispatcher.scheduleIfWaiting(context) } catch (_: Exception) {}
         try { SimWatcher.check(context) } catch (_: Exception) {}
         try { com.aurax.guard.telegram.TelegramDispatcher.kick(context) } catch (_: Exception) {}
+        try { com.aurax.guard.smart.SmartScheduler.arm(context) } catch (_: Exception) {}
         if (!Prefs.guardOn(context)) return
         try {
             GuardService.start(context, fromUi = false)

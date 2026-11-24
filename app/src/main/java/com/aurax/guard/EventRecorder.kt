@@ -34,6 +34,7 @@ object EventRecorder {
         reason: String,
         label: String,
         photo: PhotoMode,
+        extra: String? = null,
         onDone: ((EventRecord) -> Unit)? = null,
     ) {
         val app = ctx.applicationContext
@@ -64,6 +65,14 @@ object EventRecorder {
 
         fun finish() {
             if (!finished.compareAndSet(false, true)) return
+            val trail = try {
+                if (AlertType.classify(reason) == AlertType.TRACE) {
+                    val fx = fixRef.get()
+                    val old = EventStore.readAll(app).filter { it.lat != null && it.lon != null }.map { com.aurax.guard.smart.Pt(it.timeMs, it.lat!!, it.lon!!) }
+                    com.aurax.guard.smart.TraceRules.note(fx?.let { com.aurax.guard.smart.Pt(startMs, it.lat, it.lon) }, old, startMs)
+                } else ""
+            } catch (_: Exception) { "" }
+            val extraText = listOf(extra ?: "", trail).filter { it.isNotBlank() }.joinToString("\n")
             val rec0 = EventRecord(
                 id = UUID.randomUUID().toString(),
                 timeMs = startMs,
@@ -78,6 +87,7 @@ object EventRecorder {
                 batteryPct = meta.batteryPct,
                 charging = meta.charging,
                 network = meta.network,
+                extra = extraText,
             )
             var rec = rec0
             try {
@@ -86,7 +96,7 @@ object EventRecorder {
                     val a = com.aurax.guard.smart.RiskEngine.assess(
                         com.aurax.guard.smart.RiskEngine.inputFor(rec0, earlier, com.aurax.guard.ai.AiConfig.lang(app) == com.aurax.guard.ai.AiLang.ENGLISH),
                     )
-                    rec = rec0.copy(smart = a.line(), risk = a.risk.ordinal)
+                    rec = rec0.copy(smart = a.line(), risk = a.risk.ordinal, threat = a.threat)
                 }
             } catch (_: Exception) {
             }
@@ -105,6 +115,7 @@ object EventRecorder {
             }
             try { if (wake?.isHeld == true) wake.release() } catch (_: Exception) {}
             try { com.aurax.guard.telegram.TelegramDispatcher.kick(app) } catch (_: Exception) {}
+            try { com.aurax.guard.smart.TraceEngine.afterEvent(app, rec) } catch (_: Exception) {}
             main.post { onDone?.invoke(rec) }
         }
 

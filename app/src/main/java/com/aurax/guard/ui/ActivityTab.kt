@@ -186,7 +186,7 @@ class ActivityTab(private val act: Activity, private val openQueue: () -> Unit) 
                 "  |  " + (if (r.mapsLink != null) "GPS mili" else "GPS nahi") +
                 (if (r.photoName != null) "  |  photo" else ""), 13f))
         run {
-            val rb = Ui.riskBadge(c, r.risk)
+            val rb = Ui.riskBadge(c, r.risk, r.threat)
             if (rb != null) card.addView(rb.apply { layoutParams = Ui.lp(c, 6).apply { width = android.widget.LinearLayout.LayoutParams.WRAP_CONTENT } })
             if (r.smart.isNotBlank()) card.addView(Ui.dimText(c, r.smart, 12f))
         }
