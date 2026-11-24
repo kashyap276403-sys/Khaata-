@@ -93,6 +93,45 @@ class HomeTab(
         hero.addView(siren)
         body.addView(hero)
 
+        // ---- first-time setup: shown only until all 3 steps are done ----
+        try {
+            val steps = com.aurax.guard.smart.SetupRules.steps(
+                com.aurax.guard.telegram.TelegramConfig.configured(c), on, missing.isEmpty(),
+                try { EventStore.readAll(c).isNotEmpty() } catch (_: Exception) { false },
+            )
+            if (!com.aurax.guard.smart.SetupRules.allDone(steps)) {
+                val sc = Ui.card(c, Ui.teal, 14)
+                sc.addView(Ui.text(c, "Shuruaat: ${steps.count { it.done }}/${steps.size} ho gaya", 17f, bold = true))
+                steps.forEach { st ->
+                    sc.addView(Ui.text(c, (if (st.done) "OK  " else "${st.n}.  ") + st.title, 15f, bold = true, color = if (st.done) Ui.emerald else Color.WHITE).apply { setPadding(0, Ui.dp(c, 8), 0, 0) })
+                    if (!st.done) sc.addView(Ui.dimText(c, st.hint))
+                }
+                val nx = com.aurax.guard.smart.SetupRules.next(steps)!!
+                sc.addView(Ui.button(c, "Agla kadam: " + nx.title, Ui.Btn.PRIMARY, 10) {
+                    when (nx.action) {
+                        com.aurax.guard.smart.SetupAction.TELEGRAM -> actions.openTelegram()
+                        com.aurax.guard.smart.SetupAction.PROTECTION -> if (!on) { actions.setGuard(true); refresh() } else actions.fixSetup()
+                        com.aurax.guard.smart.SetupAction.TEST -> actions.testTrigger()
+                    }
+                })
+                body.addView(sc)
+            }
+        } catch (_: Exception) {
+        }
+
+        // ---- one-tap modes ----
+        try {
+            val md = Ui.card(c, null, 12)
+            md.addView(Ui.text(c, "Abhi kahan ho?", 15f, bold = true))
+            val cur = com.aurax.guard.smart.SmartPrefs.mode(c)
+            md.addView(Ui.chipRow(c, com.aurax.guard.smart.Mode.ALL.map { m ->
+                Ui.chip(c, m.title, cur == m.key) { com.aurax.guard.smart.ModeProfiles.apply(c, m); refresh() }
+            }, 8))
+            md.addView(Ui.dimText(c, com.aurax.guard.smart.Mode.of(cur)?.desc ?: "Ek tap me sensitivity, grace aur siren set ho jate hain."))
+            body.addView(md)
+        } catch (_: Exception) {
+        }
+
         // ---- quick tiles ----
         body.addView(Ui.text(c, "Quick actions", 17f, bold = true).apply { setPadding(0, Ui.dp(c, 20), 0, Ui.dp(c, 2)) })
         val parkOn = Prefs.parkOn(c)
