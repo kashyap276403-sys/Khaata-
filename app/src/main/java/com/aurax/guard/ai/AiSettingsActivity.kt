@@ -103,10 +103,20 @@ class AiSettingsActivity : Activity() {
 
         val look = Ui.card(c, null, 12)
         look.addView(Ui.tintSwitch(Switch(c)).apply {
-            text = "Liquid water-glass look (drops)"
+            text = "Liquid glass look"
             setTextColor(Color.WHITE)
             isChecked = Ui.glassOn(c)
             setOnCheckedChangeListener { v, on -> if (v.isPressed) { Ui.setGlass(c, on); toast("Agli baar screen kholne par poora lagega"); recreate() } }
+        })
+        look.addView(Ui.text(c, "Glass kitna transparent", 13f, color = Ui.dim).apply { setPadding(0, Ui.dp(c, 10), 0, 0) })
+        look.addView(Ui.chipRow(c, listOf(0 to "Clear (poora transparent)", 1 to "Soft", 2 to "Frosted").map { (v, n) ->
+            Ui.chip(c, n, Ui.clarity(c) == v) { Ui.setClarity(c, v); recreate() }
+        }, 6))
+        look.addView(Ui.tintSwitch(Switch(c)).apply {
+            text = "Paani ki boondein / bubbles"
+            setTextColor(Color.WHITE)
+            isChecked = Ui.dropsOn(c)
+            setOnCheckedChangeListener { v, on -> if (v.isPressed) { Ui.setDropsOn(c, on); recreate() } }
         })
         look.addView(Ui.text(c, "Dark theme", 13f, color = Ui.dim).apply { setPadding(0, Ui.dp(c, 10), 0, 0) })
         look.addView(Ui.chipRow(c, com.aurax.guard.ui.ThemePalette.ALL.map { p ->
@@ -118,7 +128,7 @@ class AiSettingsActivity : Activity() {
         }, 6))
         look.addView(Ui.dimText(c, "Aurora me peeche kai rang ek saath dikhte hain (gulabi, baingani, neela, firozi)."))
         look.addView(Ui.dimText(c, "Dark: hara-neela glow. Midnight: gehra neela-baingani. AMOLED: poora kaala, OLED screen par battery bachata hai."))
-        look.addView(Ui.dimText(c, "Frosted glass, paani ki chhoti boondein aur halka colour glow. Animation ya blur nahi hai, isliye battery par asar nahi. Phone dheema lage to band kar dein."))
+        look.addView(Ui.dimText(c, "Clear me glass lagbhag poora transparent hota hai: sirf patli chamakdar kinaar aur peeche ka rang dikhta hai. Boondein default band hain. Animation ya blur nahi hai, isliye battery par asar nahi."))
         root.addView(look)
 
         setContentView(ScrollView(c).apply { background = com.aurax.guard.ui.Ui.backdrop(context); isFillViewport = true; addView(root) })

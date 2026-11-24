@@ -79,6 +79,14 @@ object Ui {
         return GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(p.baseTop, p.baseMid, p.baseBottom))
     }
 
+    /** Glass clarity: 0 = Clear (almost fully transparent), 1 = Soft, 2 = Frosted. Default Clear. */
+    fun clarity(c: Context): Int = try { c.getSharedPreferences("look", Context.MODE_PRIVATE).getInt("clarity", 0).coerceIn(0, 2) } catch (_: Exception) { 0 }
+    fun setClarity(c: Context, v: Int) = c.getSharedPreferences("look", Context.MODE_PRIVATE).edit().putInt("clarity", v.coerceIn(0, 2)).apply()
+
+    /** Water drops/bubbles on glass: OFF by default, only if the person turns them on. */
+    fun dropsOn(c: Context): Boolean = try { c.getSharedPreferences("look", Context.MODE_PRIVATE).getBoolean("drops", false) } catch (_: Exception) { false }
+    fun setDropsOn(c: Context, v: Boolean) = c.getSharedPreferences("look", Context.MODE_PRIVATE).edit().putBoolean("drops", v).apply()
+
     fun setGlass(c: Context, on: Boolean) = c.getSharedPreferences("look", Context.MODE_PRIVATE).edit().putBoolean("glass", on).apply()
 
     /**
@@ -123,9 +131,10 @@ object Ui {
         val ring = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(
             Color.argb(((if (tint != null) 190 else 150) * rs).toInt(), tr, tg, tb), Color.argb((18 * rs).toInt(), 255, 255, 255), Color.argb(((if (tint != null) 110 else 80) * rs).toInt(), tr, tg, tb),
         )).apply { cornerRadius = r }
-        val topA = if (strong) pal.glassStrongAlpha else pal.glassTopAlpha
+        val k = when (clarity(c)) { 0 -> 0.30f; 1 -> 0.65f; else -> 1f } // body opacity: Clear is see-through
+        val topA = ((if (strong) pal.glassStrongAlpha else pal.glassTopAlpha) * k).toInt()
         val body = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(
-            Color.argb(topA, 255, 255, 255), Color.argb(if (tint != null) 30 else 16, tr, tg, tb), Color.argb(10, 255, 255, 255),
+            Color.argb(topA, 255, 255, 255), Color.argb(((if (tint != null) 30 else 16) * k).toInt(), tr, tg, tb), Color.argb((10 * k).toInt(), 255, 255, 255),
         )).apply { cornerRadius = (r - dp(c, 1)).coerceAtLeast(0f) }
         // thin gloss along the top edge, like light sliding over curved glass
         val sheen = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(
@@ -133,7 +142,7 @@ object Ui {
         )).apply { cornerRadius = (r - dp(c, 4)).coerceAtLeast(0f) }
         val layers = ArrayList<android.graphics.drawable.Drawable>()
         layers.add(ring); layers.add(body); layers.add(sheen)
-        if (drops > 0) layers.add(DropsDrawable(c, dropSeed.addAndGet(13).toLong(), drops))
+        if (drops > 0 && dropsOn(c)) layers.add(DropsDrawable(c, dropSeed.addAndGet(13).toLong(), drops))
         return LayerDrawable(layers.toTypedArray()).apply {
             setLayerInset(1, dp(c, 1), dp(c, 1), dp(c, 1), dp(c, 1))
             setLayerInset(2, dp(c, 6), dp(c, 3), dp(c, 6), 0)

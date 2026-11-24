@@ -106,7 +106,7 @@ class HomeTab(
             Tile(android.R.drawable.ic_menu_send, "Telegram alerts", com.aurax.guard.telegram.TelegramConfig.summary(c).take(26), false) { actions.openTelegram() },
             Tile(android.R.drawable.ic_lock_silent_mode, "Alert controls", if (Prefs.snoozed(c)) "Quiet chalu" else "Types, quiet timer", false) { actions.openAlerts() },
             Tile(android.R.drawable.ic_menu_compass, "Emergency & Smart", if (com.aurax.guard.smart.SmartPrefs.traceOn(c)) "Trace ON" else "Trace, modes, digest", false) { actions.openEmergency() },
-            Tile(android.R.drawable.ic_menu_help, "AI & Look", if (com.aurax.guard.ai.AiConfig.ready(c)) "AI chalu" else "AI band, glass, hints", false) { actions.openAi() },
+            Tile(android.R.drawable.ic_menu_help, "Look & AI", if (com.aurax.guard.ai.AiConfig.ready(c)) "AI chalu" else "Glass, theme, rang", false) { actions.openAi() },
             Tile(android.R.drawable.ic_menu_info_details, "Phone readiness", "Background / OEM check", false) { actions.openReadiness() },
             Tile(android.R.drawable.ic_menu_manage, "Protection settings", "PIN, siren, privacy", false) { actions.openControls() },
             Tile(android.R.drawable.ic_menu_search, "Permission check", "Risky apps dekhein", false) { goGuard() },
