@@ -13,6 +13,50 @@ import android.graphics.Shader
 import android.graphics.drawable.Drawable
 import java.util.Random
 
+// Plain-Int colour helpers so the palettes work in unit tests (android.graphics.Color is not available there).
+private const val BLACK_I = 0xFF000000.toInt()
+private fun argbI(a: Int, r: Int, g: Int, b: Int) = (a shl 24) or (r shl 16) or (g shl 8) or b
+private fun rgbI(r: Int, g: Int, b: Int) = argbI(255, r, g, b)
+
+/** A glow behind the glass: centre and size as fractions of the screen width/height. */
+data class Glow(val xFrac: Float, val yFrac: Float, val rFrac: Float, val argb: Int)
+
+/** Colours and glass strength of one dark theme. Pure values, so they can be unit tested. */
+data class ThemePalette(
+    val key: String,
+    val title: String,
+    val baseTop: Int,
+    val baseMid: Int,
+    val baseBottom: Int,
+    val glows: List<Glow>,
+    val glassTopAlpha: Int,
+    val glassStrongAlpha: Int,
+    val ringScale: Float,
+    val dialogBase: Int,
+    val navBg: Int,
+) {
+    companion object {
+        val DARK = ThemePalette(
+            "dark", "Dark", rgbI(4, 36, 28), rgbI(3, 12, 14), BLACK_I,
+            listOf(Glow(0.88f, 0.07f, 0.75f, argbI(95, 46, 196, 182)), Glow(0.06f, 0.46f, 0.65f, argbI(60, 25, 211, 160)), Glow(0.92f, 0.88f, 0.70f, argbI(55, 70, 130, 255))),
+            44, 64, 1f, argbI(214, 10, 26, 22), argbI(235, 6, 14, 12),
+        )
+        val MIDNIGHT = ThemePalette(
+            "midnight", "Midnight", rgbI(10, 12, 38), rgbI(5, 6, 20), BLACK_I,
+            listOf(Glow(0.88f, 0.07f, 0.78f, argbI(95, 112, 92, 255)), Glow(0.06f, 0.46f, 0.65f, argbI(60, 60, 120, 255)), Glow(0.92f, 0.88f, 0.70f, argbI(48, 46, 196, 182))),
+            42, 60, 1f, argbI(220, 10, 12, 30), argbI(238, 6, 8, 22),
+        )
+        /** Pure black for OLED screens: almost no glow and dimmer glass, so most pixels stay off. */
+        val AMOLED = ThemePalette(
+            "amoled", "AMOLED black", BLACK_I, BLACK_I, BLACK_I,
+            listOf(Glow(0.90f, 0.05f, 0.6f, argbI(34, 46, 196, 182)), Glow(0.05f, 0.9f, 0.5f, argbI(16, 70, 130, 255))),
+            28, 40, 0.7f, argbI(248, 0, 0, 0), argbI(255, 0, 0, 0),
+        )
+        val ALL = listOf(DARK, MIDNIGHT, AMOLED)
+        fun of(key: String?) = ALL.firstOrNull { it.key == key } ?: DARK
+    }
+}
+
 /** One water drop: position as a fraction of the card, radius in dp. */
 data class Drop(val xFrac: Float, val yFrac: Float, val rDp: Float)
 
@@ -78,7 +122,7 @@ class DropsDrawable(private val c: Context, seed: Long, count: Int) : Drawable()
 }
 
 /** Dark base with three soft colour glows behind everything, so the glass has something to refract. Static. */
-class LiquidBackdrop : Drawable() {
+class LiquidBackdrop(private val pal: ThemePalette = ThemePalette.DARK) : Drawable() {
     private val base = Paint()
     private val orb = Paint(Paint.ANTI_ALIAS_FLAG)
     private var orbs: List<Triple<Float, Float, RadialGradient>> = emptyList()
@@ -86,14 +130,10 @@ class LiquidBackdrop : Drawable() {
     override fun onBoundsChange(b: Rect) {
         val w = b.width().toFloat()
         val h = b.height().toFloat()
-        base.shader = LinearGradient(0f, 0f, 0f, h, intArrayOf(Color.rgb(4, 36, 28), Color.rgb(3, 12, 14), Color.BLACK), floatArrayOf(0f, 0.55f, 1f), Shader.TileMode.CLAMP)
+        base.shader = LinearGradient(0f, 0f, 0f, h, intArrayOf(pal.baseTop, pal.baseMid, pal.baseBottom), floatArrayOf(0f, 0.55f, 1f), Shader.TileMode.CLAMP)
         fun g(cx: Float, cy: Float, r: Float, col: Int) =
             Triple(cx, cy, RadialGradient(cx, cy, r, intArrayOf(col, Color.argb(0, Color.red(col), Color.green(col), Color.blue(col))), null, Shader.TileMode.CLAMP))
-        orbs = listOf(
-            g(w * 0.88f, h * 0.07f, w * 0.75f, Color.argb(95, 46, 196, 182)),
-            g(w * 0.06f, h * 0.46f, w * 0.65f, Color.argb(60, 25, 211, 160)),
-            g(w * 0.92f, h * 0.88f, w * 0.7f, Color.argb(55, 70, 130, 255)),
-        )
+        orbs = pal.glows.map { g(w * it.xFrac, h * it.yFrac, w * it.rFrac, it.argb) }
     }
 
     override fun draw(canvas: Canvas) {

@@ -46,10 +46,7 @@ class TabShell(private val act: Activity, controls: View, actions: HomeActions) 
 
     val root = LinearLayout(act).apply {
         orientation = LinearLayout.VERTICAL
-        background = if (Ui.glassOn(act)) Ui.backdrop(act) else GradientDrawable(
-            GradientDrawable.Orientation.TOP_BOTTOM,
-            intArrayOf(Color.rgb(4, 38, 28), Color.BLACK, Color.BLACK),
-        )
+        background = if (Ui.glassOn(act)) Ui.backdrop(act) else Ui.flatGradient(act)
         addView(frame, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
         addView(nav.root)
     }

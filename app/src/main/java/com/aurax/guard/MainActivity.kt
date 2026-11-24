@@ -56,6 +56,7 @@ class MainActivity : Activity(), HomeActions {
     private lateinit var lockView: View
     private lateinit var mainView: View
     private lateinit var shell: TabShell
+    private var builtTheme = ""
     private lateinit var pinBtnLabel: Button
     private lateinit var pinRemoveBtn: Button
     private val syncs = mutableListOf<() -> Unit>()
@@ -76,6 +77,7 @@ class MainActivity : Activity(), HomeActions {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        builtTheme = com.aurax.guard.ui.Ui.themeKey(this) + com.aurax.guard.ui.Ui.glassOn(this)
         window.statusBarColor = Color.BLACK
         window.navigationBarColor = Color.BLACK
 
@@ -269,10 +271,7 @@ class MainActivity : Activity(), HomeActions {
         )
 
         mainView = ScrollView(this).apply {
-            background = GradientDrawable(
-                GradientDrawable.Orientation.TOP_BOTTOM,
-                intArrayOf(Color.rgb(4, 38, 28), Color.BLACK, Color.BLACK),
-            )
+            background = com.aurax.guard.ui.Ui.flatGradient(this@MainActivity)
             isFillViewport = true
             addView(root)
         }
@@ -297,10 +296,7 @@ class MainActivity : Activity(), HomeActions {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
             setPadding(dp(32), dp(32), dp(32), dp(32))
-            background = GradientDrawable(
-                GradientDrawable.Orientation.TOP_BOTTOM,
-                intArrayOf(Color.rgb(4, 38, 28), Color.BLACK),
-            )
+            background = com.aurax.guard.ui.Ui.flatGradient(this@MainActivity)
             isClickable = true
         }
         box.addView(label("auraX Guard", 28f, bold = true))
@@ -458,6 +454,11 @@ class MainActivity : Activity(), HomeActions {
 
     override fun onResume() {
         super.onResume()
+        // theme or glass switch changed in AI & Look: rebuild this screen once so it matches
+        if (builtTheme.isNotEmpty() && builtTheme != com.aurax.guard.ui.Ui.themeKey(this) + com.aurax.guard.ui.Ui.glassOn(this)) {
+            recreate()
+            return
+        }
         try { com.aurax.guard.telegram.TelegramDispatcher.kick(this) } catch (_: Exception) {}
         applySecure()
         showGate()

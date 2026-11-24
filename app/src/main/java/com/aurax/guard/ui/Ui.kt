@@ -40,6 +40,18 @@ object Ui {
         true
     }
 
+    fun themeKey(c: Context): String =
+        try { c.getSharedPreferences("look", Context.MODE_PRIVATE).getString("theme", "dark") ?: "dark" } catch (_: Exception) { "dark" }
+
+    fun setTheme(c: Context, key: String) = c.getSharedPreferences("look", Context.MODE_PRIVATE).edit().putString("theme", ThemePalette.of(key).key).apply()
+    fun palette(c: Context) = ThemePalette.of(themeKey(c))
+
+    /** Dark gradient used where a flat (non-glass) background is needed. */
+    fun flatGradient(c: Context): GradientDrawable {
+        val p = palette(c)
+        return GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(p.baseTop, p.baseMid, p.baseBottom))
+    }
+
     fun setGlass(c: Context, on: Boolean) = c.getSharedPreferences("look", Context.MODE_PRIVATE).edit().putBoolean("glass", on).apply()
 
     /**
@@ -62,7 +74,7 @@ object Ui {
 
     /** Window/screen background: soft colour glows behind the glass, or plain black when glass is off. */
     fun backdrop(c: Context): android.graphics.drawable.Drawable =
-        if (glassOn(c)) LiquidBackdrop() else android.graphics.drawable.ColorDrawable(Color.BLACK)
+        if (glassOn(c)) LiquidBackdrop(palette(c)) else android.graphics.drawable.ColorDrawable(Color.BLACK)
 
     fun glass(c: Context, radiusDp: Int, tint: Int? = null, strong: Boolean = false, drops: Int = 0): android.graphics.drawable.Drawable {
         val r = dp(c, radiusDp).toFloat()
@@ -76,10 +88,12 @@ object Ui {
                 setStroke(dp(c, 1), if (tint != null) Color.argb(120, tr, tg, tb) else Color.argb(46, 255, 255, 255))
             }
         }
+        val pal = palette(c)
+        val rs = pal.ringScale
         val ring = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(
-            Color.argb(if (tint != null) 170 else 110, tr, tg, tb), Color.argb(26, 255, 255, 255), Color.argb(if (tint != null) 90 else 55, tr, tg, tb),
+            Color.argb(((if (tint != null) 170 else 110) * rs).toInt(), tr, tg, tb), Color.argb((26 * rs).toInt(), 255, 255, 255), Color.argb(((if (tint != null) 90 else 55) * rs).toInt(), tr, tg, tb),
         )).apply { cornerRadius = r }
-        val topA = if (strong) 64 else 44
+        val topA = if (strong) pal.glassStrongAlpha else pal.glassTopAlpha
         val body = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(
             Color.argb(topA, 255, 255, 255), Color.argb(if (tint != null) 30 else 16, tr, tg, tb), Color.argb(10, 255, 255, 255),
         )).apply { cornerRadius = (r - dp(c, 1)).coerceAtLeast(0f) }
@@ -102,7 +116,7 @@ object Ui {
             val w = d.window ?: return
             val base = GradientDrawable().apply {
                 cornerRadius = dp(c, 24).toFloat()
-                setColor(Color.argb(if (glassOn(c)) 214 else 245, 10, 26, 22))
+                setColor(if (glassOn(c)) palette(c).dialogBase else Color.argb(245, 10, 26, 22))
             }
             w.setBackgroundDrawable(LayerDrawable(arrayOf(base, glass(c, 24, strong = true))))
             if (glassOn(c) && Build.VERSION.SDK_INT >= 31) {

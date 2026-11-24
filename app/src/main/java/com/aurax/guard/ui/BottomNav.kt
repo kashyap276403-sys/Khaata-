@@ -19,7 +19,7 @@ class BottomNav(
     val root = LinearLayout(c).apply {
         orientation = LinearLayout.HORIZONTAL
         setPadding(Ui.dp(c, 8), Ui.dp(c, 8), Ui.dp(c, 8), Ui.dp(c, 8))
-        setBackgroundColor(Color.argb(235, 6, 14, 12))
+        setBackgroundColor(Ui.palette(c).navBg)
     }
     private val items = mutableListOf<Triple<LinearLayout, ImageView, TextView>>()
 

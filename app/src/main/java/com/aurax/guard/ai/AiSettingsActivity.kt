@@ -108,6 +108,11 @@ class AiSettingsActivity : Activity() {
             isChecked = Ui.glassOn(c)
             setOnCheckedChangeListener { v, on -> if (v.isPressed) { Ui.setGlass(c, on); toast("Agli baar screen kholne par poora lagega"); recreate() } }
         })
+        look.addView(Ui.text(c, "Dark theme", 13f, color = Ui.dim).apply { setPadding(0, Ui.dp(c, 10), 0, 0) })
+        look.addView(Ui.chipRow(c, com.aurax.guard.ui.ThemePalette.ALL.map { p ->
+            Ui.chip(c, p.title, Ui.themeKey(c) == p.key) { Ui.setTheme(c, p.key); recreate() }
+        }, 6))
+        look.addView(Ui.dimText(c, "Dark: hara-neela glow. Midnight: gehra neela-baingani. AMOLED: poora kaala, OLED screen par battery bachata hai."))
         look.addView(Ui.dimText(c, "Frosted glass, paani ki chhoti boondein aur halka colour glow. Animation ya blur nahi hai, isliye battery par asar nahi. Phone dheema lage to band kar dein."))
         root.addView(look)
 
