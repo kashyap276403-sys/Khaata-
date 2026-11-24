@@ -6,6 +6,7 @@ enum class AlertType(val key: String, val title: String) {
     CHARGER("charger", "Charger nikala"),
     WRONG_UNLOCK("wrong", "Galat password / PIN"),
     SIM("sim", "SIM badli"),
+    BATTERY("battery", "Battery bahut kam"),
     MANUAL("manual", "Test / Panic"),
     OTHER("other", "Anya");
 
@@ -14,6 +15,7 @@ enum class AlertType(val key: String, val title: String) {
             val r = reason.lowercase()
             return when {
                 r.startsWith("sim") -> SIM
+                r.startsWith("battery") -> BATTERY
                 "jhatka" in r || "haath lagaya" in r -> MOTION
                 "charger" in r -> CHARGER
                 "galat" in r -> WRONG_UNLOCK
@@ -28,6 +30,7 @@ enum class AlertType(val key: String, val title: String) {
             return when (t) {
                 MANUAL, OTHER -> true
                 SIM -> Prefs.simAlertOn(c)
+                BATTERY -> Prefs.batteryAlertOn(c)
                 else -> Prefs.alertTypeOn(c, t.key)
             }
         }

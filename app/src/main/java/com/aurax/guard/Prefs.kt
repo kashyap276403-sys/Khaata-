@@ -85,7 +85,39 @@ object Prefs {
 
     fun snoozeUntil(c: Context) = p(c).getLong("snooze_until", 0L)
     fun setSnoozeUntil(c: Context, v: Long) = p(c).edit().putLong("snooze_until", v).apply()
-    fun snoozed(c: Context) = System.currentTimeMillis() < snoozeUntil(c)
+    fun snoozed(c: Context): Boolean = System.currentTimeMillis() < snoozeUntil(c) || scheduledQuiet(c)
+
+    // ---- daily quiet schedule ----
+    fun quietSchedOn(c: Context) = bool(c, "qs_on", false)
+    fun setQuietSchedOn(c: Context, v: Boolean) { setBool(c, "qs_on", v); schedStamp = 0 }
+    fun quietFromMin(c: Context) = p(c).getInt("qs_from", 7 * 60)
+    fun quietToMin(c: Context) = p(c).getInt("qs_to", 9 * 60)
+    fun setQuietWindow(c: Context, from: Int, to: Int) { p(c).edit().putInt("qs_from", from).putInt("qs_to", to).apply(); schedStamp = 0 }
+
+    @Volatile private var schedStamp = 0L
+    @Volatile private var schedResult = false
+
+    /** Inside the daily quiet window? Re-checked at most every 20 s, because the motion sensor asks 50 times a second. */
+    fun scheduledQuiet(c: Context): Boolean {
+        val now = System.currentTimeMillis()
+        if (now - schedStamp < 20_000) return schedResult
+        schedResult = try {
+            if (!quietSchedOn(c)) false else {
+                val cal = java.util.Calendar.getInstance()
+                QuietRules.inWindow(cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE), quietFromMin(c), quietToMin(c))
+            }
+        } catch (_: Exception) {
+            false
+        }
+        schedStamp = now
+        return schedResult
+    }
+
+    /** Low-battery "last location" alert. OFF by default (Android's low-battery warning fires on normal days too). */
+    fun batteryAlertOn(c: Context) = bool(c, "al_battery", false)
+    fun setBatteryAlertOn(c: Context, v: Boolean) = setBool(c, "al_battery", v)
+    fun batteryLastMs(c: Context) = p(c).getLong("bat_last", 0L)
+    fun setBatteryLastMs(c: Context, v: Long) = p(c).edit().putLong("bat_last", v).apply()
 
     /** Phone lying still: any touch/movement sets off the siren. */
     fun parkOn(c: Context) = bool(c, "park", false)

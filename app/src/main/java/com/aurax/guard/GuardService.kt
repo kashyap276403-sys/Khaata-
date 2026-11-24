@@ -52,6 +52,7 @@ class GuardService : Service(), SensorEventListener {
     private var chargerReceiver: BroadcastReceiver? = null
     private var simReceiver: BroadcastReceiver? = null
     private var screenReceiver: BroadcastReceiver? = null
+    private var batteryReceiver: BroadcastReceiver? = null
     @Volatile private var quietUntilElapsed = 0L
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -73,6 +74,7 @@ class GuardService : Service(), SensorEventListener {
         if (Prefs.chargerAlarmOn(this)) registerCharger()
         registerSim()
         registerScreen()
+        registerBattery()
         SimWatcher.check(this)
         Prefs.log(
             this,
@@ -177,6 +179,34 @@ class GuardService : Service(), SensorEventListener {
         screenReceiver = null
     }
 
+    /** Phone nearly dead: send its last location while it still can (opt-in, at most every 6 hours). */
+    private fun registerBattery() {
+        if (batteryReceiver != null) return
+        val r = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                try {
+                    if (!Prefs.batteryAlertOn(context)) return
+                    val now = System.currentTimeMillis()
+                    if (now - Prefs.batteryLastMs(context) < 6 * 3600 * 1000L) return
+                    Prefs.setBatteryLastMs(context, now)
+                    val pct = DeviceInfo.read(context).batteryPct
+                    EventRecorder.trigger(context, "Battery bahut kam ($pct%): aakhri location", "Battery low", EventRecorder.PhotoMode.NONE)
+                } catch (_: Exception) {
+                }
+            }
+        }
+        try {
+            registerReceiver(r, IntentFilter(Intent.ACTION_BATTERY_LOW))
+            batteryReceiver = r
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun unregisterBattery() {
+        batteryReceiver?.let { try { unregisterReceiver(it) } catch (_: Exception) {} }
+        batteryReceiver = null
+    }
+
     private fun registerSim() {
         if (simReceiver != null) return
         val r = object : BroadcastReceiver() {
@@ -277,6 +307,7 @@ class GuardService : Service(), SensorEventListener {
         unregisterCharger()
         unregisterSim()
         unregisterScreen()
+        unregisterBattery()
         if (instance === this) {
             instance = null
             cameraCapable = false

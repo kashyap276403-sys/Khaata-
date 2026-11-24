@@ -112,6 +112,11 @@ class AiSettingsActivity : Activity() {
         look.addView(Ui.chipRow(c, com.aurax.guard.ui.ThemePalette.ALL.map { p ->
             Ui.chip(c, p.title, Ui.themeKey(c) == p.key) { Ui.setTheme(c, p.key); recreate() }
         }, 6))
+        look.addView(Ui.text(c, "Rang (accent)", 13f, color = Ui.dim).apply { setPadding(0, Ui.dp(c, 10), 0, 0) })
+        look.addView(Ui.chipRow(c, com.aurax.guard.ui.Accent.ALL.map { a ->
+            Ui.chip(c, a.title, Ui.accent.key == a.key) { Ui.setAccent(c, a.key); recreate() }
+        }, 6))
+        look.addView(Ui.dimText(c, "Aurora me peeche kai rang ek saath dikhte hain (gulabi, baingani, neela, firozi)."))
         look.addView(Ui.dimText(c, "Dark: hara-neela glow. Midnight: gehra neela-baingani. AMOLED: poora kaala, OLED screen par battery bachata hai."))
         look.addView(Ui.dimText(c, "Frosted glass, paani ki chhoti boondein aur halka colour glow. Animation ya blur nahi hai, isliye battery par asar nahi. Phone dheema lage to band kar dein."))
         root.addView(look)

@@ -68,7 +68,9 @@ class GuardTab(private val act: Activity) {
         RiskLevel.NORMAL -> "Normal"
     }
 
-    private fun render() {
+    private fun render() = Ui.keepScroll(body) { renderNow() }
+
+    private fun renderNow() {
         val c = act
         body.removeAllViews()
         body.addView(Ui.heading(c, "Guard"))

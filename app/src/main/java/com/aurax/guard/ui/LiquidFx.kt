@@ -18,6 +18,23 @@ private const val BLACK_I = 0xFF000000.toInt()
 private fun argbI(a: Int, r: Int, g: Int, b: Int) = (a shl 24) or (r shl 16) or (g shl 8) or b
 private fun rgbI(r: Int, g: Int, b: Int) = argbI(255, r, g, b)
 
+/** Accent colour of the app (buttons, selected chips, switches, badges). [glowColors] = several colours for the multi-colour Aurora look. */
+data class Accent(val key: String, val title: String, val main: Int, val deep: Int, val rim: Int, val glowColors: List<Int>? = null) {
+    companion object {
+        val EMERALD = Accent("emerald", "Emerald", rgbI(25, 211, 160), rgbI(25, 160, 120), rgbI(120, 255, 214))
+        val OCEAN = Accent("ocean", "Ocean", rgbI(64, 156, 255), rgbI(30, 100, 200), rgbI(150, 205, 255))
+        val VIOLET = Accent("violet", "Violet", rgbI(150, 120, 255), rgbI(100, 70, 205), rgbI(200, 185, 255))
+        val SUNSET = Accent("sunset", "Sunset", rgbI(255, 150, 70), rgbI(205, 100, 35), rgbI(255, 200, 150))
+        val ROSE = Accent("rose", "Rose", rgbI(255, 100, 150), rgbI(205, 55, 105), rgbI(255, 170, 200))
+        val AURORA = Accent("aurora", "Aurora (multi-colour)", rgbI(70, 205, 230), rgbI(60, 120, 220), rgbI(180, 220, 255),
+            listOf(rgbI(255, 105, 180), rgbI(140, 110, 255), rgbI(46, 196, 182), rgbI(70, 130, 255)))
+        val ALL = listOf(EMERALD, OCEAN, VIOLET, SUNSET, ROSE, AURORA)
+        fun of(key: String?) = ALL.firstOrNull { it.key == key } ?: EMERALD
+    }
+}
+
+private fun withAlphaI(color: Int, a: Int) = (a shl 24) or (color and 0x00FFFFFF)
+
 /** A glow behind the glass: centre and size as fractions of the screen width/height. */
 data class Glow(val xFrac: Float, val yFrac: Float, val rFrac: Float, val argb: Int)
 
@@ -54,6 +71,21 @@ data class ThemePalette(
         )
         val ALL = listOf(DARK, MIDNIGHT, AMOLED)
         fun of(key: String?) = ALL.firstOrNull { it.key == key } ?: DARK
+    }
+
+    /** Same theme, coloured by the chosen accent. Alpha (strength) of every glow is kept; AMOLED stays pure black. */
+    fun withAccent(a: Accent): ThemePalette {
+        val g = if (a.glowColors != null) {
+            glows.mapIndexed { i, gl -> gl.copy(argb = withAlphaI(a.glowColors[i % a.glowColors.size], gl.argb ushr 24)) }
+        } else {
+            glows.mapIndexed { i, gl -> if (i == 0) gl.copy(argb = withAlphaI(a.main, gl.argb ushr 24)) else gl }
+        }
+        // the plain Dark theme takes its top colour from the accent (14% of it), the others keep their own base
+        val top = if (key == "dark") {
+            val m = a.glowColors?.get(0) ?: a.main
+            rgbI(((m shr 16) and 255) * 14 / 100, ((m shr 8) and 255) * 14 / 100, (m and 255) * 14 / 100)
+        } else baseTop
+        return copy(glows = g, baseTop = top)
     }
 }
 

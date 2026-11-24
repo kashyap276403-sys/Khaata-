@@ -42,7 +42,9 @@ class HomeTab(
         sirenBtn?.visibility = if (v) View.VISIBLE else View.GONE
     }
 
-    fun refresh() {
+    fun refresh() = Ui.keepScroll(body) { refreshNow() }
+
+    private fun refreshNow() {
         body.removeAllViews()
         val c = act
         val dpm = c.getSystemService(DevicePolicyManager::class.java)

@@ -143,6 +143,7 @@ object RiskEngine {
             }
         }
         if (i.batteryPct in 0..15 && !i.charging) actions.add(t("Battery kam hai: jaldi dhyan dein", "Battery is low: act soon"))
+        if (i.type == AlertType.BATTERY) actions.add(0, t("Phone ka ye aakhri location hai: Maps me dekhein", "This is the phone's last known location: check the map"))
         if (i.lat == null && i.type != AlertType.MANUAL) actions.add(t("Phone ki Location ON rakhein", "Keep phone Location ON"))
         return Assessment(risk, s.toString().trim(), actions, falseLikely, moved)
     }

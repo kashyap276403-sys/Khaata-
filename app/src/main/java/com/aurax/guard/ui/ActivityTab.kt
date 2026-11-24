@@ -31,7 +31,9 @@ class ActivityTab(private val act: Activity, private val openQueue: () -> Unit) 
         refresh()
     }
 
-    fun refresh() {
+    fun refresh() = Ui.keepScroll(body) { refreshNow() }
+
+    private fun refreshNow() {
         val c = act
         body.removeAllViews()
         body.addView(Ui.heading(c, "Activity"))

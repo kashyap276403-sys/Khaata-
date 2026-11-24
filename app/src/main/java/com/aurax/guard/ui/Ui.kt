@@ -22,7 +22,33 @@ import android.widget.TextView
 
 /** Small view kit so every tab looks the same: dark, calm, rounded. */
 object Ui {
-    val emerald = Color.rgb(25, 211, 160)
+    @Volatile var accent: Accent = Accent.EMERALD
+    private var accentLoaded = false
+    /** The accent colour (name kept as 'emerald' so every existing screen follows the chosen accent). */
+    val emerald: Int get() = accent.main
+
+    fun loadAccent(c: Context) {
+        try {
+            accent = Accent.of(c.getSharedPreferences("look", Context.MODE_PRIVATE).getString("accent", "emerald"))
+        } catch (_: Exception) {
+        }
+        accentLoaded = true
+    }
+
+    fun setAccent(c: Context, key: String) {
+        c.getSharedPreferences("look", Context.MODE_PRIVATE).edit().putString("accent", Accent.of(key).key).apply()
+        accent = Accent.of(key)
+    }
+
+    /** Keeps the scroll position while a tab rebuilds its content (no jump to the top). */
+    inline fun keepScroll(body: View, block: () -> Unit) {
+        var p: android.view.ViewParent? = body.parent
+        while (p != null && p !is android.widget.ScrollView) p = p.parent
+        val sv = p as? android.widget.ScrollView
+        val y = sv?.scrollY ?: 0
+        block()
+        if (sv != null && y > 0) sv.post { sv.scrollTo(0, y) }
+    }
     val teal = Color.rgb(46, 196, 182)
     val amber = Color.rgb(255, 200, 87)
     val red = Color.rgb(255, 107, 107)
@@ -48,7 +74,8 @@ object Ui {
 
     /** Dark gradient used where a flat (non-glass) background is needed. */
     fun flatGradient(c: Context): GradientDrawable {
-        val p = palette(c)
+        if (!accentLoaded) loadAccent(c)
+        val p = palette(c).withAccent(accent)
         return GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(p.baseTop, p.baseMid, p.baseBottom))
     }
 
@@ -73,10 +100,13 @@ object Ui {
         }
 
     /** Window/screen background: soft colour glows behind the glass, or plain black when glass is off. */
-    fun backdrop(c: Context): android.graphics.drawable.Drawable =
-        if (glassOn(c)) LiquidBackdrop(palette(c)) else android.graphics.drawable.ColorDrawable(Color.BLACK)
+    fun backdrop(c: Context): android.graphics.drawable.Drawable {
+        if (!accentLoaded) loadAccent(c)
+        return if (glassOn(c)) LiquidBackdrop(palette(c).withAccent(accent)) else android.graphics.drawable.ColorDrawable(Color.BLACK)
+    }
 
     fun glass(c: Context, radiusDp: Int, tint: Int? = null, strong: Boolean = false, drops: Int = 0): android.graphics.drawable.Drawable {
+        if (!accentLoaded) loadAccent(c)
         val r = dp(c, radiusDp).toFloat()
         val tr = if (tint != null) Color.red(tint) else 255
         val tg = if (tint != null) Color.green(tint) else 255
@@ -167,7 +197,7 @@ object Ui {
             val on = intArrayOf(android.R.attr.state_checked)
             val off = intArrayOf(-android.R.attr.state_checked)
             sw.thumbTintList = ColorStateList(arrayOf(on, off), intArrayOf(Color.WHITE, Color.argb(235, 220, 230, 228)))
-            sw.trackTintList = ColorStateList(arrayOf(on, off), intArrayOf(Color.argb(210, 25, 190, 140), Color.argb(70, 255, 255, 255)))
+            sw.trackTintList = ColorStateList(arrayOf(on, off), intArrayOf((210 shl 24) or (accent.main and 0xFFFFFF), Color.argb(70, 255, 255, 255)))
         } catch (_: Exception) {
         }
         return sw
@@ -202,11 +232,11 @@ object Ui {
         setPadding(dp(c, 2), dp(c, 8), 0, dp(c, 4))
     }
 
-    fun card(c: Context, accent: Int? = null, topDp: Int = 12): LinearLayout = LinearLayout(c).apply {
+    fun card(c: Context, accent: Int? = null, topDp: Int = 12, drops: Int = -1): LinearLayout = LinearLayout(c).apply {
         orientation = LinearLayout.VERTICAL
         val pad = if (c.resources.configuration.screenWidthDp < 360) 12 else 16
         setPadding(dp(c, pad), dp(c, 14), dp(c, pad), dp(c, 14))
-        background = glass(c, 28, accent, drops = if (accent != null) 3 else 2)
+        background = glass(c, 28, accent, drops = if (drops >= 0) drops else if (accent != null) 3 else 2)
         layoutParams = lp(c, topDp)
     }
 
@@ -219,8 +249,8 @@ object Ui {
                 cornerRadius = dp(c, 28).toFloat() // pill: Android caps this at half the height
                 when (style) {
                     Btn.PRIMARY -> {
-                        setColor(Color.argb(150, 25, 160, 120))
-                        setStroke(dp(c, 1), Color.argb(140, 120, 255, 214))
+                        setColor((150 shl 24) or (accent.deep and 0xFFFFFF))
+                        setStroke(dp(c, 1), (140 shl 24) or (accent.rim and 0xFFFFFF))
                     }
                     Btn.GHOST -> {
                         setColor(Color.argb(20, 255, 255, 255))
@@ -255,8 +285,8 @@ object Ui {
         setPadding(dp(c, 14), dp(c, 8), dp(c, 14), dp(c, 8))
         background = GradientDrawable().apply {
             cornerRadius = dp(c, 40).toFloat()
-            setColor(if (selected) Color.argb(140, 25, 160, 120) else Color.argb(20, 255, 255, 255))
-            setStroke(dp(c, 1), if (selected) Color.argb(200, 25, 211, 160) else Color.argb(50, 255, 255, 255))
+            setColor(if (selected) (140 shl 24) or (accent.deep and 0xFFFFFF) else Color.argb(20, 255, 255, 255))
+            setStroke(dp(c, 1), if (selected) (200 shl 24) or (accent.main and 0xFFFFFF) else Color.argb(50, 255, 255, 255))
         }
         layoutParams = LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.WRAP_CONTENT,

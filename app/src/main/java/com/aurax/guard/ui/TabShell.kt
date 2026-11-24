@@ -64,7 +64,12 @@ class TabShell(private val act: Activity, controls: View, actions: HomeActions) 
     fun select(i: Int) {
         inControls = false
         index = i
-        tabViews.forEachIndexed { j, v -> v.visibility = if (j == i) View.VISIBLE else View.GONE }
+        tabViews.forEachIndexed { j, v ->
+            v.animate().cancel()
+            v.alpha = 1f
+            v.visibility = if (j == i) View.VISIBLE else View.GONE
+            if (j == i) { v.alpha = 0f; v.animate().alpha(1f).setDuration(140).start() }
+        }
         controlsWrap.visibility = View.GONE
         nav.setSelected(i)
         refresh()

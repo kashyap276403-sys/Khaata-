@@ -30,6 +30,9 @@ class CleanerActivity : Activity() {
     private var step = 1
     private var busy = false
     private var source = ""
+    private var selInfo: TextView? = null
+    private var delBtn: android.widget.Button? = null
+    private var sizesMap: Map<String, Long> = emptyMap()
     private val cancel = AtomicBoolean(false)
     private val io = Executors.newSingleThreadExecutor()
     private val PICK = 31
@@ -140,12 +143,13 @@ class CleanerActivity : Activity() {
         shown.forEach { it -> body.addView(row(it)) }
         if (items.size > shown.size && shown.size >= 300) body.addView(Ui.dimText(c, "Sirf top 300 dikh rahi hain. Filter badal kar baaki dekhein."))
 
-        val sizes = items.associate { it.id to it.size }
+        sizesMap = items.associate { it.id to it.size }
         val bar = Ui.card(c, Ui.amber, 14)
-        bar.addView(Ui.text(c, "3. Aapne chuna: ${sel.size} files, ${SizeFormat.bytes(sel.totalBytes(sizes))}", 15f, bold = true))
-        bar.addView(Ui.button(c, "Chuni hui files delete karein...", Ui.Btn.DANGER, 8) { confirm() }.apply {
-            isEnabled = sel.size > 0; alpha = if (sel.size > 0) 1f else 0.4f
-        })
+        selInfo = Ui.text(c, "", 15f, bold = true)
+        bar.addView(selInfo)
+        delBtn = Ui.button(c, "Chuni hui files delete karein...", Ui.Btn.DANGER, 8) { confirm() }
+        bar.addView(delBtn)
+        updateBar()
         bar.addView(Ui.button(c, "Chunav saaf karein", Ui.Btn.GHOST, 6) { sel.clear(); render() })
         body.addView(bar)
     }
@@ -153,7 +157,7 @@ class CleanerActivity : Activity() {
     private fun row(it: ScanItem): LinearLayout {
         val c = this
         val col = when (it.verdict.level) { FileLevel.HIGH -> Ui.red; FileLevel.MEDIUM -> Ui.amber; else -> Ui.teal }
-        return Ui.card(c, if (it.verdict.level == FileLevel.INFO) null else col, 8).apply {
+        return Ui.card(c, if (it.verdict.level == FileLevel.INFO) null else col, 8, drops = 0).apply {
             addView(CheckBox(c).apply {
                 text = it.name
                 setTextColor(Color.WHITE)
@@ -170,7 +174,11 @@ class CleanerActivity : Activity() {
         }
     }
 
-    private fun updateBar() = render()
+    /** Only the counter and the delete button change when a box is ticked: no full list rebuild, no scroll jump. */
+    private fun updateBar() {
+        selInfo?.text = "3. Aapne chuna: ${sel.size} files, ${SizeFormat.bytes(sel.totalBytes(sizesMap))}"
+        delBtn?.apply { isEnabled = sel.size > 0; alpha = if (sel.size > 0) 1f else 0.4f }
+    }
 
     /** Optional. Sends only the file name, size and the app's warning signs. The answer is advice; it never selects or deletes anything. */
     private fun explain(it: ScanItem) {
