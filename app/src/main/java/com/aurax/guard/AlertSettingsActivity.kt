@@ -15,6 +15,7 @@ class AlertSettingsActivity : Activity() {
     private lateinit var quietInfo: TextView
     private lateinit var graceInfo: TextView
     private lateinit var smartBox: LinearLayout
+    private lateinit var schedInfo: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,6 +44,17 @@ class AlertSettingsActivity : Activity() {
         q.addView(Ui.dimText(c, "Quiet me jhatka, charger aur siren ruk jate hain. Galat password ki photo aur SIM alert phir bhi chalte hain."))
         root.addView(q)
 
+        // ---- daily quiet schedule ----
+        val qs = Ui.card(c, null, 12)
+        qs.addView(Ui.text(c, "Roz ka Quiet schedule", 15f, bold = true))
+        qs.addView(sw("Is samay jhatka/charger/siren ruke rahein", { Prefs.quietSchedOn(c) }) { Prefs.setQuietSchedOn(c, it); renderSched() })
+        schedInfo = Ui.dimText(c, "")
+        qs.addView(schedInfo)
+        qs.addView(Ui.button(c, "Shuru ka samay badlein", Ui.Btn.GHOST, 6) { pickTime(true) })
+        qs.addView(Ui.button(c, "Khatam ka samay badlein", Ui.Btn.GHOST, 6) { pickTime(false) })
+        qs.addView(Ui.dimText(c, "Jaise roz college/office jaate waqt. Raat ko paar karne wala samay bhi chalta hai (jaise 22:00 se 06:00). Galat password aur SIM alert phir bhi chalte hain."))
+        root.addView(qs)
+
         // ---- detection ----
         val d = Ui.card(c, null, 12)
         d.addView(Ui.text(c, "Detection (kya pakda jaye)", 15f, bold = true))
@@ -64,6 +76,8 @@ class AlertSettingsActivity : Activity() {
             t.addView(sw(ty.title, { Prefs.alertTypeOn(c, ty.key) }) { Prefs.setAlertTypeOn(c, ty.key, it) })
         }
         t.addView(sw(AlertType.SIM.title, { Prefs.simAlertOn(c) }) { Prefs.setSimAlertOn(c, it) })
+        t.addView(sw(AlertType.BATTERY.title + " (aakhri location bhejo)", { Prefs.batteryAlertOn(c) }) { Prefs.setBatteryAlertOn(c, it) })
+        t.addView(Ui.dimText(c, "Battery alert default band hai: Android ka low-battery warning roz bhi aata hai. Chalu karne par 6 ghante me ek hi baar jata hai."))
         root.addView(t)
 
         // ---- grace ----
@@ -92,6 +106,22 @@ class AlertSettingsActivity : Activity() {
         setContentView(ScrollView(c).apply { background = com.aurax.guard.ui.Ui.backdrop(context); isFillViewport = true; addView(root) })
         renderGrace()
         renderSmart()
+        renderSched()
+    }
+
+    private fun renderSched() {
+        schedInfo.text = (if (Prefs.quietSchedOn(this)) "Chalu: " else "Band: ") +
+            QuietRules.fmt(Prefs.quietFromMin(this)) + " se " + QuietRules.fmt(Prefs.quietToMin(this)) +
+            (if (Prefs.scheduledQuiet(this)) "  (abhi quiet chal raha hai)" else "")
+    }
+
+    private fun pickTime(from: Boolean) {
+        val cur = if (from) Prefs.quietFromMin(this) else Prefs.quietToMin(this)
+        android.app.TimePickerDialog(this, { _, h, m ->
+            val v = h * 60 + m
+            if (from) Prefs.setQuietWindow(this, v, Prefs.quietToMin(this)) else Prefs.setQuietWindow(this, Prefs.quietFromMin(this), v)
+            renderSched()
+        }, cur / 60, cur % 60, true).show()
     }
 
     private fun renderSmart() {
