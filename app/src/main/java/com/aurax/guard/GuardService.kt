@@ -166,6 +166,7 @@ class GuardService : Service(), SensorEventListener {
             override fun onReceive(context: Context, intent: Intent) {
                 quietUntilElapsed = SystemClock.elapsedRealtime() + Prefs.graceSec(context) * 1000L
                 detector?.reset()
+                try { if (intent.action == Intent.ACTION_SCREEN_ON || intent.action == Intent.ACTION_USER_PRESENT) Thread { com.aurax.guard.remote.RemoteControl.poll(context.applicationContext) }.start() } catch (_: Exception) {}
                 // some phones quietly drop sensor listeners around screen on/off: put it back so protection stays alive
                 try { if (Prefs.snatchLockOn(context) || Prefs.parkOn(context)) { sensors.unregisterListener(this@GuardService); startMotion() } } catch (_: Exception) {}
             }

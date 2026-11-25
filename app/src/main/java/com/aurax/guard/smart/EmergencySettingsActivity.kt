@@ -93,6 +93,7 @@ class EmergencySettingsActivity : Activity() {
         ms.addView(sw("Heartbeat", { SmartPrefs.heartbeatOn(c) }) { SmartPrefs.setHeartbeatOn(c, it) })
         ms.addView(sw("Smart Engine (risk + summary)", { Prefs.smartOn(c) }) { Prefs.setSmartOn(c, it) })
         ms.addView(sw("Auto-Tune (sensitivity khud halki)", { Prefs.autoTune(c) }) { Prefs.setAutoTune(c, it) })
+        ms.addView(sw("Telegram remote control", { com.aurax.guard.remote.RemotePrefs.masterOn(c) }) { com.aurax.guard.remote.RemotePrefs.setMasterOn(c, it); SmartScheduler.arm(c) })
         ms.addView(sw("APK / file check", { SmartPrefs.apkScanOn(c) }) { SmartPrefs.setApkScanOn(c, it) })
         body.addView(ms)
 
@@ -112,6 +113,18 @@ class EmergencySettingsActivity : Activity() {
         val st = SmartPrefs.state(c)
         t.addView(Ui.dimText(c, "Abhi: " + (if (!SmartPrefs.traceOn(c)) "band" else if (st.active) "trace chal raha hai" + (if (st.criticalSent) " (critical bhej diya)" else "") else "tayyar, battery theek hai")))
         body.addView(t)
+
+        // ---- telegram remote control ----
+        val rc = Ui.card(c, Ui.teal, 12)
+        rc.addView(Ui.text(c, "Telegram remote control", 15f, bold = true))
+        val rOn = com.aurax.guard.remote.RemotePrefs.masterOn(c)
+        rc.addView(sw("Remote control ON", { com.aurax.guard.remote.RemotePrefs.masterOn(c) }) { com.aurax.guard.remote.RemotePrefs.setMasterOn(c, it); SmartScheduler.arm(c) })
+        rc.addView(Ui.dimText(c, if (!com.aurax.guard.telegram.TelegramConfig.configured(c)) "Pehle Telegram alerts me token aur Chat ID jodein." else if (rOn) "Chalu: sirf aapki configured private chat se commands. Polling ${com.aurax.guard.remote.RemoteControl.interval(c) / 60_000} min me ek baar (screen off ya saver me dheemi)." else "Band: koi command nahi sunta aur koi polling nahi."))
+        rc.addView(sw("/loc aur /trace (location)", { com.aurax.guard.remote.RemotePrefs.locOn(c) }) { com.aurax.guard.remote.RemotePrefs.setLocOn(c, it) })
+        rc.addView(sw("/photo (photo)", { com.aurax.guard.remote.RemotePrefs.photoOn(c) }) { com.aurax.guard.remote.RemotePrefs.setPhotoOn(c, it) })
+        rc.addView(sw("/status, /saver, /boost", { com.aurax.guard.remote.RemotePrefs.modeOn(c) }) { com.aurax.guard.remote.RemotePrefs.setModeOn(c, it) })
+        rc.addView(Ui.dimText(c, "Commands: /loc /photo /status /trace /saver on|off /boost /help. Koi command file delete ya Thief Protection band nahi kar sakta. Cooldown: /photo 60s, /loc 30s, /boost 2 min, aur ghante me max 20. Jawab Telegram queue se aate hain, aur har command Activity log me dikhta hai."))
+        body.addView(rc)
 
         // ---- battery saver ----
         val sv = Ui.card(c, null, 12)

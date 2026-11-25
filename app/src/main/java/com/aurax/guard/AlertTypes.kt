@@ -19,7 +19,7 @@ enum class AlertType(val key: String, val title: String) {
                 r.startsWith("sim") -> SIM
                 r.startsWith("battery") -> BATTERY
                 r.startsWith("emergency") || r.startsWith("guard boost") -> TRACE
-                r.startsWith("daily digest") || r.startsWith("heartbeat") -> DIGEST
+                r.startsWith("daily digest") || r.startsWith("heartbeat") || r.startsWith("remote") -> DIGEST
                 "jhatka" in r || "haath lagaya" in r -> MOTION
                 "charger" in r -> CHARGER
                 "galat" in r -> WRONG_UNLOCK

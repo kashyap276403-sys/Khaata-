@@ -60,6 +60,7 @@ object SmartScheduler {
                 TraceEngine.boostNextAt(app, now),
                 nextDigestAt(app, now),
                 if (Prefs.guardOn(app)) now + GuardRules.WATCHDOG_MS else null,
+                com.aurax.guard.remote.RemoteControl.nextPollAt(app, now),
                 if (SmartPrefs.heartbeatOn(app)) maxOf(now + 60_000L, SmartPrefs.heartbeatLast(app) + SmartPrefs.heartbeatHours(app) * 3_600_000L) else null,
             )
             val am = app.getSystemService(Context.ALARM_SERVICE) as AlarmManager
@@ -74,6 +75,7 @@ object SmartScheduler {
     fun tick(app: Context) {
         val now = System.currentTimeMillis()
         ensureGuard(app)
+        try { com.aurax.guard.remote.RemoteControl.poll(app) } catch (_: Exception) {}
         try {
             val meta = DeviceInfo.read(app)
             if (SmartPrefs.traceOn(app)) TraceEngine.onBattery(app, meta.batteryPct, meta.charging)

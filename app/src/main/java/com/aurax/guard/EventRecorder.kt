@@ -58,7 +58,9 @@ object EventRecorder {
         val fixRef = AtomicReference<LocationFetcher.Fix?>(null)
         val locNoteRef = AtomicReference("")
         val photoRef = AtomicReference<String?>(null)
-        val wantAudio = AudioClip.canRecord(app)
+        // routine messages (digest, heartbeat, remote replies) carry no location and no audio: saves battery
+        val light = AlertType.classify(reason) == AlertType.DIGEST
+        val wantAudio = !light && AudioClip.canRecord(app)
         val audioRef = AtomicReference<String?>(null)
         val parts = AtomicInteger((if (photo == PhotoMode.NONE) 1 else 2) + (if (wantAudio) 1 else 0))
         val finished = AtomicBoolean(false)
@@ -125,10 +127,15 @@ object EventRecorder {
 
         main.postDelayed({ finish() }, HARD_LIMIT_MS)
 
-        LocationFetcher.fetch(app) { f, note ->
-            fixRef.set(f)
-            locNoteRef.set(note)
+        if (light) {
+            locNoteRef.set("routine message, location nahi li")
             partDone()
+        } else {
+            LocationFetcher.fetch(app) { f, note ->
+                fixRef.set(f)
+                locNoteRef.set(note)
+                partDone()
+            }
         }
 
         if (wantAudio) AudioClip.record(app) { n -> audioRef.set(n); partDone() }

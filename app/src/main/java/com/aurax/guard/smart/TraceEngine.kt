@@ -66,6 +66,9 @@ object TraceEngine {
         return maxOf(now + 15_000L, SmartPrefs.boostLast(app) + if (n == 0) FIRST_MS else EVERY_MS)
     }
 
+    /** One extra snapshot on request (Telegram /boost). Does not touch the automatic boost counters. */
+    fun remoteSnapshot(app: Context) = send(app, "Guard Boost: remote snapshot", SmartPrefs.tracePhoto(app))
+
     fun runBoost(app: Context) {
         val now = System.currentTimeMillis()
         val n = SmartPrefs.boostCount(app)

@@ -460,6 +460,7 @@ class MainActivity : Activity(), HomeActions {
             return
         }
         try { com.aurax.guard.telegram.TelegramDispatcher.kick(this) } catch (_: Exception) {}
+        try { val a = applicationContext; Thread { com.aurax.guard.remote.RemoteControl.poll(a) }.start() } catch (_: Exception) {}
         applySecure()
         showGate()
         ui.post(poll)
