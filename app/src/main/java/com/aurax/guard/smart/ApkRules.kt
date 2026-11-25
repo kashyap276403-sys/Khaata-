@@ -49,7 +49,7 @@ object ApkRules {
         if (BAD_NAME.any { lower.contains(it) }) { score += 3; reasons.add("Naam me crack/mod/hack jaisa shabd hai") }
         val parts = lower.split('.')
         if (parts.size >= 3 && parts.dropLast(1).any { it in setOf("pdf", "jpg", "png", "doc", "mp4", "mp3", "txt") }) { score += 3; reasons.add("Double extension (jaise photo.jpg.apk): bhramak naam") }
-        if (signatureChangedForInstalled) { score += 5; reasons.add("Aapke phone ke isi naam ke app se alag signature: nakli/badla hua ho sakta hai") }
+        if (signatureChangedForInstalled) { score += 8; reasons.add("Aapke phone ke isi naam ke app se alag signature: nakli/badla hua ho sakta hai") }
         if (hasDebugFlag) { score += 1; reasons.add("Debug build hai (normal store app nahi)") }
         val smsCombo = perms.contains("android.permission.READ_SMS") || perms.contains("android.permission.RECEIVE_SMS")
         val overlay = perms.contains("android.permission.SYSTEM_ALERT_WINDOW") || perms.contains("android.permission.BIND_ACCESSIBILITY_SERVICE")
