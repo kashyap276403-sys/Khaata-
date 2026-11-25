@@ -30,6 +30,7 @@ object AiSummarizer {
     /** Called by the Telegram sender once per alert. Returns the alert with an AI line when possible. */
     fun ensure(ctx: Context, r: EventRecord): EventRecord {
         if (r.aiSummary.isNotBlank() || r.aiTries >= MAX_TRIES || !AiConfig.ready(ctx)) return r
+        if (com.aurax.guard.smart.BatterySaver.active(ctx)) return r // saver: skip the optional AI line
         val key = AiConfig.key(ctx) ?: return r
         val all = try { EventStore.readAll(ctx) } catch (_: Exception) { emptyList() }
         val f = facts(ctx, r, all)

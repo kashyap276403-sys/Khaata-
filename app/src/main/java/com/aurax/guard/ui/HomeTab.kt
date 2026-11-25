@@ -93,6 +93,31 @@ class HomeTab(
         hero.addView(siren)
         body.addView(hero)
 
+        // ---- status at a glance ----
+        try {
+            val sm = com.aurax.guard.smart.SmartPrefs
+            val items = com.aurax.guard.smart.StatusRules.items(
+                on, com.aurax.guard.telegram.TelegramConfig.hasToken(c) && com.aurax.guard.telegram.TelegramConfig.chatId(c).isNotBlank(),
+                com.aurax.guard.telegram.TelegramConfig.enabled(c),
+                try { EventStore.pendingCount(c) } catch (_: Exception) { 0 },
+                sm.traceOn(c), sm.state(c).active, com.aurax.guard.smart.BatterySaver.active(c), missing.isEmpty(),
+            )
+            val sc = Ui.card(c, null, 12, drops = 0)
+            items.forEach { it0 ->
+                val col = when (it0.kind) {
+                    com.aurax.guard.smart.StatusKind.ACTIVE, com.aurax.guard.smart.StatusKind.READY -> Ui.emerald
+                    com.aurax.guard.smart.StatusKind.QUEUED, com.aurax.guard.smart.StatusKind.ATTENTION -> Ui.amber
+                    else -> Ui.dim
+                }
+                val row = LinearLayout(c).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(0, Ui.dp(c, 4), 0, Ui.dp(c, 4)) }
+                row.addView(Ui.text(c, it0.title, 14f).apply { layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) })
+                row.addView(Ui.badge(c, it0.label, col))
+                sc.addView(row)
+            }
+            body.addView(sc)
+        } catch (_: Exception) {
+        }
+
         // ---- first-time setup: shown only until all 3 steps are done ----
         try {
             val steps = com.aurax.guard.smart.SetupRules.steps(
@@ -135,34 +160,48 @@ class HomeTab(
         // ---- quick tiles ----
         body.addView(Ui.text(c, "Quick actions", 17f, bold = true).apply { setPadding(0, Ui.dp(c, 20), 0, Ui.dp(c, 2)) })
         val parkOn = Prefs.parkOn(c)
-        val tiles = listOf(
-            Tile(android.R.drawable.ic_menu_mylocation, "Test Trigger", "Photo + GPS + log", false) { actions.testTrigger() },
-            Tile(android.R.drawable.ic_lock_lock, "Quick Lock", "Abhi screen lock", false) { actions.quickLock() },
-            Tile(android.R.drawable.ic_dialog_alert, "Panic", "Lock + siren", true) { actions.panic() },
-            Tile(android.R.drawable.ic_menu_agenda, "Haath mat lagao", if (parkOn) "ON" else "OFF", false) { actions.togglePark(); refresh() },
-            Tile(android.R.drawable.ic_menu_gallery, "Photos", "Intruder photos", false) { actions.openPhotos() },
-            Tile(android.R.drawable.ic_menu_view, "Alert queue", "GPS, battery, samay", false) { actions.openQueue() },
-            Tile(android.R.drawable.ic_menu_send, "Telegram alerts", com.aurax.guard.telegram.TelegramConfig.summary(c).take(26), false) { actions.openTelegram() },
-            Tile(android.R.drawable.ic_lock_silent_mode, "Alert controls", if (Prefs.snoozed(c)) "Quiet chalu" else "Types, quiet timer", false) { actions.openAlerts() },
-            Tile(android.R.drawable.ic_menu_compass, "Emergency & Smart", if (com.aurax.guard.smart.SmartPrefs.traceOn(c)) "Trace ON" else "Trace, modes, digest", false) { actions.openEmergency() },
-            Tile(android.R.drawable.ic_menu_help, "Look & AI", if (com.aurax.guard.ai.AiConfig.ready(c)) "AI chalu" else "Glass, theme, rang", false) { actions.openAi() },
-            Tile(android.R.drawable.ic_menu_info_details, "Phone readiness", "Background / OEM check", false) { actions.openReadiness() },
-            Tile(android.R.drawable.ic_menu_manage, "Protection settings", "PIN, siren, privacy", false) { actions.openControls() },
-            Tile(android.R.drawable.ic_menu_search, "Permission check", "Risky apps dekhein", false) { goGuard() },
+        val saverOn = com.aurax.guard.smart.BatterySaver.active(c)
+        val sections = listOf(
+            "Rakshak (abhi ke kaam)" to listOf(
+                Tile(android.R.drawable.ic_menu_mylocation, "Test Trigger", "Photo + GPS + log", false) { actions.testTrigger() },
+                Tile(android.R.drawable.ic_lock_lock, "Quick Lock", "Abhi screen lock", false) { actions.quickLock() },
+                Tile(android.R.drawable.ic_dialog_alert, "Panic", "Lock + siren", true) { actions.panic() },
+                Tile(android.R.drawable.ic_menu_agenda, "Haath mat lagao", if (parkOn) "ON" else "OFF", false) { actions.togglePark(); refresh() },
+            ),
+            "Alerts aur history" to listOf(
+                Tile(android.R.drawable.ic_menu_view, "Alert queue", "GPS, battery, samay", false) { actions.openQueue() },
+                Tile(android.R.drawable.ic_menu_gallery, "Photos", "Intruder photos", false) { actions.openPhotos() },
+                Tile(android.R.drawable.ic_menu_send, "Telegram alerts", com.aurax.guard.telegram.TelegramConfig.summary(c).take(26), false) { actions.openTelegram() },
+                Tile(android.R.drawable.ic_lock_silent_mode, "Alert controls", if (Prefs.snoozed(c)) "Quiet chalu" else "Types, quiet timer", false) { actions.openAlerts() },
+            ),
+            "Smart aur battery" to listOf(
+                Tile(android.R.drawable.ic_menu_compass, "Emergency & Smart", if (com.aurax.guard.smart.SmartPrefs.traceOn(c)) "Trace ON" else "Trace, modes, digest", false) { actions.openEmergency() },
+                Tile(android.R.drawable.ic_menu_day, "Battery saver", if (saverOn) "Active" else "Off (tap: chalu)", false) { actions.toggleSaver(); refresh() },
+                Tile(android.R.drawable.ic_menu_search, "APK / file check", "Download ki jaanch", false) { actions.openApkScan() },
+                Tile(android.R.drawable.ic_menu_search, "Permission check", "Risky apps dekhein", false) { goGuard() },
+            ),
+            "Settings aur setup" to listOf(
+                Tile(android.R.drawable.ic_menu_help, "Look & AI", if (com.aurax.guard.ai.AiConfig.ready(c)) "AI chalu" else "Glass, theme, rang", false) { actions.openAi() },
+                Tile(android.R.drawable.ic_menu_info_details, "Phone readiness", "Background / OEM check", false) { actions.openReadiness() },
+                Tile(android.R.drawable.ic_menu_manage, "Protection settings", "PIN, siren, privacy", false) { actions.openControls() },
+            ),
         )
-        tiles.chunked(2).forEach { pair ->
-            val r = LinearLayout(c).apply {
-                orientation = LinearLayout.HORIZONTAL
-                layoutParams = Ui.lp(c, 10)
+        sections.forEach { (title, tiles) ->
+            body.addView(Ui.text(c, title, 14f, bold = true, color = Ui.dim).apply { setPadding(Ui.dp(c, 4), Ui.dp(c, 14), 0, Ui.dp(c, 2)) })
+            tiles.chunked(2).forEach { pair ->
+                val r = LinearLayout(c).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    layoutParams = Ui.lp(c, 10)
+                }
+                pair.forEachIndexed { i, t ->
+                    r.addView(tile(t).apply {
+                        (layoutParams as LinearLayout.LayoutParams).apply {
+                            if (i == 0) rightMargin = Ui.dp(c, 5) else leftMargin = Ui.dp(c, 5)
+                        }
+                    })
+                }
+                body.addView(r)
             }
-            pair.forEachIndexed { i, t ->
-                r.addView(tile(t).apply {
-                    (layoutParams as LinearLayout.LayoutParams).apply {
-                        if (i == 0) rightMargin = Ui.dp(c, 5) else leftMargin = Ui.dp(c, 5)
-                    }
-                })
-            }
-            body.addView(r)
         }
 
         // ---- snapshot ----

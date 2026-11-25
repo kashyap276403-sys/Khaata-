@@ -40,6 +40,7 @@ object TraceEngine {
     private const val FIRST_MS = 45_000L
     private const val EVERY_MS = 5 * 60_000L
     private const val MAX = 6
+    private fun maxNow(app: Context) = if (BatterySaver.active(app)) BatterySaver.BOOST_MAX_SAVER else MAX
 
     fun afterEvent(app: Context, rec: EventRecord) {
         if (!SmartPrefs.boostOn(app)) return
@@ -54,13 +55,13 @@ object TraceEngine {
     fun boostDue(app: Context, now: Long): Boolean {
         if (!SmartPrefs.boostOn(app)) return false
         val until = SmartPrefs.boostUntil(app)
-        if (now >= until || SmartPrefs.boostCount(app) >= MAX) return false
+        if (now >= until || SmartPrefs.boostCount(app) >= maxNow(app)) return false
         val n = SmartPrefs.boostCount(app)
         return now - SmartPrefs.boostLast(app) >= if (n == 0) FIRST_MS else EVERY_MS
     }
 
     fun boostNextAt(app: Context, now: Long): Long? {
-        if (!SmartPrefs.boostOn(app) || now >= SmartPrefs.boostUntil(app) || SmartPrefs.boostCount(app) >= MAX) return null
+        if (!SmartPrefs.boostOn(app) || now >= SmartPrefs.boostUntil(app) || SmartPrefs.boostCount(app) >= maxNow(app)) return null
         val n = SmartPrefs.boostCount(app)
         return maxOf(now + 15_000L, SmartPrefs.boostLast(app) + if (n == 0) FIRST_MS else EVERY_MS)
     }

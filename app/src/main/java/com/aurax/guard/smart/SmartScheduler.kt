@@ -57,10 +57,11 @@ object SmartScheduler {
             if (SmartPrefs.traceOn(app)) TraceEngine.onBattery(app, meta.batteryPct, meta.charging)
             if (TraceEngine.boostDue(app, now)) TraceEngine.runBoost(app)
             val label = TelegramConfig.label(app)
+            val saver = BatterySaver.active(app) // saves battery: skips extras only, never trace/alerts
             val recs = try { EventStore.readAll(app) } catch (_: Exception) { emptyList() }
             val dig = nextDigestAt(app, now - 24 * 3_600_000L)
             val day = Calendar.getInstance().apply { timeInMillis = now }.get(Calendar.DAY_OF_YEAR)
-            if (SmartPrefs.digestOn(app) && dig != null) {
+            if (!saver && SmartPrefs.digestOn(app) && dig != null) {
                 val cal = Calendar.getInstance().apply { timeInMillis = now }
                 val minNow = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)
                 if (minNow >= SmartPrefs.digestMin(app) && SmartPrefs.digestLastDay(app) != day) {
@@ -69,7 +70,7 @@ object SmartScheduler {
                     EventRecorder.trigger(app, "Daily digest", label, PhotoMode.NONE, txt) {}
                 }
             }
-            if (SmartPrefs.heartbeatOn(app) && now - SmartPrefs.heartbeatLast(app) >= SmartPrefs.heartbeatHours(app) * 3_600_000L) {
+            if (!saver && SmartPrefs.heartbeatOn(app) && now - SmartPrefs.heartbeatLast(app) >= SmartPrefs.heartbeatHours(app) * 3_600_000L) {
                 SmartPrefs.setHeartbeatLast(app, now)
                 EventRecorder.trigger(app, "Heartbeat: guard chalu hai", label, PhotoMode.NONE, "Battery ${meta.batteryPct}%, network ${meta.network}.") {}
             }

@@ -46,6 +46,14 @@ object SmartPrefs {
     fun heartbeatLast(c: Context) = p(c).getLong("hb_last", 0L)
     fun setHeartbeatLast(c: Context, v: Long) = p(c).edit().putLong("hb_last", v).apply()
 
+    // ---- battery saver ----
+    fun saverManual(c: Context) = b(c, "saver_on", false)
+    fun setSaverManual(c: Context, v: Boolean) = sb(c, "saver_on", v)
+    fun saverAuto(c: Context) = b(c, "saver_auto", true)
+    fun setSaverAuto(c: Context, v: Boolean) = sb(c, "saver_auto", v)
+    fun saverPct(c: Context) = p(c).getInt("saver_pct", 20).coerceIn(5, 40)
+    fun setSaverPct(c: Context, v: Int) = p(c).edit().putInt("saver_pct", v.coerceIn(5, 40)).apply()
+
     // ---- guard behaviour ----
     fun stealth(c: Context) = b(c, "stealth", false)
     fun setStealth(c: Context, v: Boolean) = sb(c, "stealth", v)

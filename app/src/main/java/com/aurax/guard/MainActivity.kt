@@ -562,6 +562,13 @@ class MainActivity : Activity(), HomeActions {
 
     override fun openPhotos() = startActivity(Intent(this, PhotosActivity::class.java))
     override fun openQueue() = startActivity(Intent(this, EventsActivity::class.java))
+    override fun openApkScan() = startActivity(Intent(this, com.aurax.guard.smart.ApkScanActivity::class.java))
+    override fun toggleSaver() {
+        val v = !com.aurax.guard.smart.SmartPrefs.saverManual(this)
+        com.aurax.guard.smart.SmartPrefs.setSaverManual(this, v)
+        Prefs.log(this, if (v) "Battery saver chalu (haath se)" else "Battery saver band")
+        android.widget.Toast.makeText(this, if (v) "Battery saver chalu: sirf extras kam hue, alert/location chalu hain" else "Battery saver band", android.widget.Toast.LENGTH_LONG).show()
+    }
     override fun openEmergency() = startActivity(Intent(this, com.aurax.guard.smart.EmergencySettingsActivity::class.java))
     override fun openAlerts() = startActivity(Intent(this, AlertSettingsActivity::class.java))
     override fun openAi() = startActivity(Intent(this, com.aurax.guard.ai.AiSettingsActivity::class.java))

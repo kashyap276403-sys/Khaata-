@@ -12,6 +12,8 @@ interface HomeActions {
     fun openReadiness()
     fun openAi()
     fun openEmergency() {}
+    fun openApkScan() {}
+    fun toggleSaver() {}
     fun openAlerts()
     fun openControls()
     fun stopSiren()

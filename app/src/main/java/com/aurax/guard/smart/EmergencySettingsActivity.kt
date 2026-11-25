@@ -77,6 +77,16 @@ class EmergencySettingsActivity : Activity() {
         t.addView(Ui.dimText(c, "Abhi: " + (if (!SmartPrefs.traceOn(c)) "band" else if (st.active) "trace chal raha hai" + (if (st.criticalSent) " (critical bhej diya)" else "") else "tayyar, battery theek hai")))
         body.addView(t)
 
+        // ---- battery saver ----
+        val sv = Ui.card(c, null, 12)
+        sv.addView(Ui.text(c, "Battery saver", 15f, bold = true))
+        sv.addView(Ui.dimText(c, "Abhi: " + BatterySaver.describe(SmartPrefs.saverManual(c), SmartPrefs.saverAuto(c), SmartPrefs.saverPct(c), BatterySaver.active(c))))
+        sv.addView(sw("Battery saver abhi chalu karein", { SmartPrefs.saverManual(c) }) { SmartPrefs.setSaverManual(c, it) })
+        sv.addView(sw("Battery kam hone par khud chalu", { SmartPrefs.saverAuto(c) }) { SmartPrefs.setSaverAuto(c, it) })
+        sv.addView(Ui.chipRow(c, listOf(15, 20, 30).map { v -> Ui.chip(c, "$v% se kam", SmartPrefs.saverPct(c) == v) { SmartPrefs.setSaverPct(c, v); changed() } }, 8))
+        sv.addView(Ui.dimText(c, "Saver sirf extras rokta hai: daily digest, heartbeat, optional AI line, aur Guard Boost ke snapshots (2 tak). Motion guard, SIM/galat password alert, Emergency Trace location, emergency photo aur Telegram queue hamesha chalte hain."))
+        body.addView(sv)
+
         // ---- boost ----
         val b = Ui.card(c, null, 12)
         b.addView(Ui.text(c, "Guard Boost", 15f, bold = true))
