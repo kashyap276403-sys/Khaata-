@@ -57,6 +57,7 @@ class ApkScanActivity : Activity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         val uri = data?.data ?: return
+        if (!SmartPrefs.apkScanOn(this)) return
         if (requestCode != 41 || resultCode != RESULT_OK) return
         busy = true; rows = emptyList(); info = "Scan chal raha hai..."; cancel.set(false); render()
         io.execute {
@@ -117,9 +118,14 @@ class ApkScanActivity : Activity() {
         body.addView(Ui.heading(c, "APK / file check"))
         body.addView(Ui.dimText(c, "Download kiye APK ki jaanch: kaun si ijazat maangta hai, naam aur signature kaise hain. Sirf report; delete/install apne aap kabhi nahi."))
         val top = Ui.card(c, Ui.teal, 14)
-        top.addView(Ui.text(c, if (busy) "Scan chal raha hai" else "Ready", 15f, bold = true))
+        val enabled = SmartPrefs.apkScanOn(c)
+        top.addView(Ui.tintSwitch(android.widget.Switch(c)).apply {
+            text = "APK / file check chalu"; textSize = 15f; setTextColor(Color.WHITE); isChecked = enabled
+            setOnCheckedChangeListener { v, b -> if (v.isPressed) { SmartPrefs.setApkScanOn(c, b); if (!b) cancel.set(true); render() } }
+        })
+        top.addView(Ui.text(c, if (!enabled) "Off" else if (busy) "Scan chal raha hai" else "Ready", 15f, bold = true))
         top.addView(Ui.dimText(c, info))
-        if (!busy) top.addView(Ui.button(c, "Folder chunein aur scan karein", Ui.Btn.PRIMARY, 10) {
+        if (!enabled) top.addView(Ui.dimText(c, "Band hai: koi scan nahi chalega. Upar switch se chalu karein.")) else if (!busy) top.addView(Ui.button(c, "Folder chunein aur scan karein", Ui.Btn.PRIMARY, 10) {
             try { startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE), 41) } catch (_: Exception) { Toast.makeText(c, "Folder chunne wali screen nahi khuli", Toast.LENGTH_LONG).show() }
         }) else top.addView(Ui.button(c, "Rokein", Ui.Btn.GHOST, 10) { cancel.set(true) })
         body.addView(top)

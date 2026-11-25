@@ -33,3 +33,25 @@ class V3Test {
         assertEquals("Off", t[0].label); assertEquals("Setup baaki", t[1].label); assertEquals("Khaali", t[2].label); assertEquals("Active", t[4].label)
     }
 }
+
+class GuardRulesTest {
+    @Test fun watchdogOnlyRestartsWhenOn() {
+        assertTrue(GuardRules.shouldRestart(true, false))
+        assertFalse(GuardRules.shouldRestart(true, true))
+        assertFalse(GuardRules.shouldRestart(false, false)) // user turned it off: stays off
+    }
+
+    @Test fun modesNeverSwitchParkOff() {
+        assertTrue(GuardRules.parkAfterMode(true, false))
+        assertTrue(GuardRules.parkAfterMode(false, true))
+        assertFalse(GuardRules.parkAfterMode(false, false))
+    }
+
+    @Test fun protectionWords() {
+        assertEquals("Off", GuardRules.status(false, false, true))
+        assertEquals("Ruka hua", GuardRules.status(true, false, true))
+        assertEquals("Adhoora", GuardRules.status(true, true, false))
+        assertEquals("Active", GuardRules.status(true, true, true))
+        assertEquals("Ruka hua", StatusRules.items(true, true, true, 0, false, false, false, true, false)[0].label)
+    }
+}

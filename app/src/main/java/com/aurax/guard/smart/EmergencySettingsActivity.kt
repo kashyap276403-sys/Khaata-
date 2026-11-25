@@ -52,6 +52,10 @@ class EmergencySettingsActivity : Activity() {
         render()
     }
 
+    private fun restartGuard() {
+        try { if (Prefs.guardOn(this)) GuardService.start(this, true) } catch (_: Exception) {}
+    }
+
     private fun granted(p: String) = checkSelfPermission(p) == PackageManager.PERMISSION_GRANTED
 
     private fun render() {
@@ -59,6 +63,38 @@ class EmergencySettingsActivity : Activity() {
         body.removeAllViews()
         body.addView(Ui.heading(c, "Emergency & Smart"))
         body.addView(Ui.dimText(c, "Sab kuch phone par chalta hai: koi AI key ya account nahi chahiye. Ye sab default me band hai. Alert Telegram queue se jate hain (offline me baad me)."))
+
+        // ---- all ON / OFF switches in one place ----
+        val ms = Ui.card(c, Ui.teal, 14)
+        ms.addView(Ui.text(c, "Sab ON / OFF ek jagah", 15f, bold = true))
+        ms.addView(Ui.dimText(c, "Jo OFF hai wo band rehta hai: na background me chalta hai, na alert bhejta hai. Protection kabhi apne aap band nahi hota."))
+        ms.addView(sw("Thief Protection (master)", { Prefs.guardOn(c) }) { on ->
+            if (on) {
+                Prefs.setGuardOn(c, true)
+                try { GuardService.start(c, true) } catch (_: Exception) {}
+            } else {
+                // switch back until confirmed
+                Ui.showGlass(android.app.AlertDialog.Builder(c).setTitle("Protection band karein?")
+                    .setMessage("Jhatka, galat password, SIM aur charger ki nigrani ruk jayegi.")
+                    .setPositiveButton("Haan, band karein") { _, _ -> Prefs.setGuardOn(c, false); GuardService.stop(c); com.aurax.guard.Siren.stop(); Prefs.log(c, "Suraksha band (user)"); render() }
+                    .setNegativeButton("Chalu rakhein") { _, _ -> render() })
+            }
+        })
+        ms.addView(sw("Jhatka lagne par screen lock", { Prefs.snatchLockOn(c) }) { Prefs.setSnatchLockOn(c, it); restartGuard() })
+        ms.addView(sw("Haath mat lagao (Park) mode", { Prefs.parkOn(c) }) { Prefs.setParkOn(c, it); restartGuard() })
+        ms.addView(sw("Siren", { Prefs.sirenOn(c) }) { Prefs.setSirenOn(c, it) })
+        ms.addView(sw("Stealth / Silent (awaaz nahi)", { SmartPrefs.stealth(c) }) { SmartPrefs.setStealth(c, it) })
+        ms.addView(sw("Galat password alert", { Prefs.alertTypeOn(c, com.aurax.guard.AlertType.WRONG_UNLOCK.key) }) { Prefs.setAlertTypeOn(c, com.aurax.guard.AlertType.WRONG_UNLOCK.key, it) })
+        ms.addView(sw("SIM alert", { Prefs.simAlertOn(c) }) { Prefs.setSimAlertOn(c, it) })
+        ms.addView(sw("Emergency Trace", { SmartPrefs.traceOn(c) }) { SmartPrefs.setTraceOn(c, it) })
+        ms.addView(sw("Emergency photo", { SmartPrefs.tracePhoto(c) }) { SmartPrefs.setTracePhoto(c, it) })
+        ms.addView(sw("Battery saver (abhi)", { SmartPrefs.saverManual(c) }) { SmartPrefs.setSaverManual(c, it) })
+        ms.addView(sw("Battery saver khud (kam battery par)", { SmartPrefs.saverAuto(c) }) { SmartPrefs.setSaverAuto(c, it) })
+        ms.addView(sw("Heartbeat", { SmartPrefs.heartbeatOn(c) }) { SmartPrefs.setHeartbeatOn(c, it) })
+        ms.addView(sw("Smart Engine (risk + summary)", { Prefs.smartOn(c) }) { Prefs.setSmartOn(c, it) })
+        ms.addView(sw("Auto-Tune (sensitivity khud halki)", { Prefs.autoTune(c) }) { Prefs.setAutoTune(c, it) })
+        ms.addView(sw("APK / file check", { SmartPrefs.apkScanOn(c) }) { SmartPrefs.setApkScanOn(c, it) })
+        body.addView(ms)
 
         // ---- trace ----
         val t = Ui.card(c, Ui.red, 14)

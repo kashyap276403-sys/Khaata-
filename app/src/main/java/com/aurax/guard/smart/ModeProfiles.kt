@@ -20,7 +20,8 @@ object ModeProfiles {
     fun apply(ctx: Context, m: Mode) {
         Prefs.setSensitivity(ctx, m.sens)
         Prefs.setGraceSec(ctx, m.grace)
-        Prefs.setParkOn(ctx, m.park)
+        Prefs.setParkOn(ctx, GuardRules.parkAfterMode(Prefs.parkOn(ctx), m.park))
+        if (m.park && !Prefs.guardOn(ctx)) { Prefs.setGuardOn(ctx, true); try { GuardService.start(ctx, false) } catch (_: Exception) {} }
         Prefs.setSirenOn(ctx, m.siren)
         SmartPrefs.setStealth(ctx, m.stealth)
         SmartPrefs.setMode(ctx, m.key)

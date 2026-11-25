@@ -70,6 +70,6 @@ object TraceEngine {
         val now = System.currentTimeMillis()
         val n = SmartPrefs.boostCount(app)
         SmartPrefs.setBoost(app, SmartPrefs.boostUntil(app), now, n + 1)
-        send(app, "Guard Boost: snapshot ${n + 1}/$MAX", true)
+        send(app, "Guard Boost: snapshot ${n + 1}/$MAX", SmartPrefs.tracePhoto(app))
     }
 }

@@ -31,6 +31,26 @@ object SmartScheduler {
         return cal.timeInMillis
     }
 
+    /** Wake the scheduler at a specific time (used by the watchdog after the app is swiped away). */
+    fun armAt(c: Context, atMs: Long) {
+        try {
+            val am = c.applicationContext.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, atMs, pi(c.applicationContext))
+        } catch (_: Exception) {}
+    }
+
+    /** Watchdog: the switch says ON but the service died (battery manager, crash): restart it. Never turns anything OFF. */
+    fun ensureGuard(app: Context) {
+        try {
+            if (GuardRules.shouldRestart(Prefs.guardOn(app), com.aurax.guard.GuardService.instance != null)) {
+                com.aurax.guard.GuardService.start(app, false)
+                Prefs.log(app, "Watchdog: guard ruka tha, dobara chalu kiya")
+            }
+        } catch (e: Exception) {
+            Prefs.log(app, "Watchdog: guard dobara chalu nahi hua (${e.javaClass.simpleName}); app kholte hi chalu hoga")
+        }
+    }
+
     fun arm(c: Context) {
         val app = c.applicationContext
         try {
@@ -39,6 +59,7 @@ object SmartScheduler {
                 TraceRules.nextTraceAt(SmartPrefs.state(app), now, SmartPrefs.cfg(app)),
                 TraceEngine.boostNextAt(app, now),
                 nextDigestAt(app, now),
+                if (Prefs.guardOn(app)) now + GuardRules.WATCHDOG_MS else null,
                 if (SmartPrefs.heartbeatOn(app)) maxOf(now + 60_000L, SmartPrefs.heartbeatLast(app) + SmartPrefs.heartbeatHours(app) * 3_600_000L) else null,
             )
             val am = app.getSystemService(Context.ALARM_SERVICE) as AlarmManager
@@ -52,6 +73,7 @@ object SmartScheduler {
     /** Do whatever is due. Safe to call at any time. */
     fun tick(app: Context) {
         val now = System.currentTimeMillis()
+        ensureGuard(app)
         try {
             val meta = DeviceInfo.read(app)
             if (SmartPrefs.traceOn(app)) TraceEngine.onBattery(app, meta.batteryPct, meta.charging)

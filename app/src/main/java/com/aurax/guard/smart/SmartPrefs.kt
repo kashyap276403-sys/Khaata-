@@ -46,6 +46,10 @@ object SmartPrefs {
     fun heartbeatLast(c: Context) = p(c).getLong("hb_last", 0L)
     fun setHeartbeatLast(c: Context, v: Long) = p(c).edit().putLong("hb_last", v).apply()
 
+    // ---- APK / file check ----
+    fun apkScanOn(c: Context) = b(c, "apk_on", true)
+    fun setApkScanOn(c: Context, v: Boolean) = sb(c, "apk_on", v)
+
     // ---- battery saver ----
     fun saverManual(c: Context) = b(c, "saver_on", false)
     fun setSaverManual(c: Context, v: Boolean) = sb(c, "saver_on", v)

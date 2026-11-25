@@ -87,6 +87,19 @@ class HomeTab(
         } else if (missing.isNotEmpty()) {
             hero.addView(Ui.button(c, "Ab theek karein") { actions.fixSetup() })
         }
+        if (on && com.aurax.guard.GuardService.instance == null) {
+            hero.addView(Ui.dimText(c, "Switch ON hai par guard abhi chal nahi raha (phone ne rok diya ho sakta hai). Ek tap me dobara chalu karein.", 13f))
+            hero.addView(Ui.button(c, "Guard dobara chalu karein", Ui.Btn.PRIMARY, 8) { actions.setGuard(true); refresh() })
+        }
+        if (on) {
+            hero.addView(Ui.button(c, "Protection band karein", Ui.Btn.GHOST, 8) {
+                val b = android.app.AlertDialog.Builder(c).setTitle("Protection band karein?")
+                    .setMessage("Band karne par jhatka, galat password, SIM aur charger ki nigrani ruk jayegi. Ye sirf aapke kehne par hi band hota hai.")
+                    .setPositiveButton("Haan, band karein") { _, _ -> actions.setGuard(false); refresh() }
+                    .setNegativeButton("Chalu rakhein", null)
+                Ui.showGlass(b)
+            })
+        }
         val siren = Ui.button(c, "SIREN BAND KAREIN", Ui.Btn.DANGER) { actions.stopSiren() }
         siren.visibility = View.GONE
         sirenBtn = siren
@@ -100,7 +113,7 @@ class HomeTab(
                 on, com.aurax.guard.telegram.TelegramConfig.hasToken(c) && com.aurax.guard.telegram.TelegramConfig.chatId(c).isNotBlank(),
                 com.aurax.guard.telegram.TelegramConfig.enabled(c),
                 try { EventStore.pendingCount(c) } catch (_: Exception) { 0 },
-                sm.traceOn(c), sm.state(c).active, com.aurax.guard.smart.BatterySaver.active(c), missing.isEmpty(),
+                sm.traceOn(c), sm.state(c).active, com.aurax.guard.smart.BatterySaver.active(c), missing.isEmpty(), com.aurax.guard.GuardService.instance != null,
             )
             val sc = Ui.card(c, null, 12, drops = 0)
             items.forEach { it0 ->
@@ -177,7 +190,7 @@ class HomeTab(
             "Smart aur battery" to listOf(
                 Tile(android.R.drawable.ic_menu_compass, "Emergency & Smart", if (com.aurax.guard.smart.SmartPrefs.traceOn(c)) "Trace ON" else "Trace, modes, digest", false) { actions.openEmergency() },
                 Tile(android.R.drawable.ic_menu_day, "Battery saver", if (saverOn) "Active" else "Off (tap: chalu)", false) { actions.toggleSaver(); refresh() },
-                Tile(android.R.drawable.ic_menu_search, "APK / file check", "Download ki jaanch", false) { actions.openApkScan() },
+                Tile(android.R.drawable.ic_menu_search, "APK / file check", if (com.aurax.guard.smart.SmartPrefs.apkScanOn(c)) "Download ki jaanch" else "Off", false) { actions.openApkScan() },
                 Tile(android.R.drawable.ic_menu_search, "Permission check", "Risky apps dekhein", false) { goGuard() },
             ),
             "Settings aur setup" to listOf(

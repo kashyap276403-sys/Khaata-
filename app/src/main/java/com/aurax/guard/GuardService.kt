@@ -166,6 +166,8 @@ class GuardService : Service(), SensorEventListener {
             override fun onReceive(context: Context, intent: Intent) {
                 quietUntilElapsed = SystemClock.elapsedRealtime() + Prefs.graceSec(context) * 1000L
                 detector?.reset()
+                // some phones quietly drop sensor listeners around screen on/off: put it back so protection stays alive
+                try { if (Prefs.snatchLockOn(context) || Prefs.parkOn(context)) { sensors.unregisterListener(this@GuardService); startMotion() } } catch (_: Exception) {}
             }
         }
         try {
@@ -257,6 +259,12 @@ class GuardService : Service(), SensorEventListener {
         }
     }
 
+    /** Swiped away from recents: ask the watchdog to check again in a few seconds (the guard itself keeps running). */
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        try { com.aurax.guard.smart.SmartScheduler.armAt(this, System.currentTimeMillis() + 5_000L) } catch (_: Exception) {}
+        super.onTaskRemoved(rootIntent)
+    }
+
     private fun unregisterSim() {
         simReceiver?.let { try { unregisterReceiver(it) } catch (_: Exception) {} }
         simReceiver = null
@@ -270,6 +278,11 @@ class GuardService : Service(), SensorEventListener {
     }
 
     override fun onSensorChanged(e: SensorEvent) {
+        // An exception here would kill the whole service (and with it the protection): never let one escape.
+        try { handleSensor(e) } catch (t: Throwable) { try { detector?.reset() } catch (_: Throwable) {} }
+    }
+
+    private fun handleSensor(e: SensorEvent) {
         val v = e.values
         val mag = if (usingLinear) {
             sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])
@@ -305,6 +318,10 @@ class GuardService : Service(), SensorEventListener {
 
     /** Lock the screen and (if enabled) sound the siren. */
     fun trigger(reason: String) {
+        try { triggerInner(reason) } catch (t: Throwable) { Prefs.log(this, "Trigger me dikkat (${t.javaClass.simpleName}); protection chalu hai") }
+    }
+
+    private fun triggerInner(reason: String) {
         var locked = false
         try {
             val dpm = getSystemService(DevicePolicyManager::class.java)
