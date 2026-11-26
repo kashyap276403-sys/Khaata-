@@ -11,11 +11,16 @@ data class LockSnap(
         .put("to", traceOn).put("sa", saverAuto).put("ba", batteryAlert).put("ic", ignoreCharging).toString()
 
     companion object {
-        fun fromJson(s: String?): LockSnap? = try {
-            val o = JSONObject(s ?: return null)
-            LockSnap(o.getBoolean("c"), o.getBoolean("s"), o.getBoolean("w"), o.getBoolean("st"), o.getBoolean("tp"), o.getBoolean("to"),
-                o.getBoolean("sa"), o.getBoolean("ba"), o.getBoolean("ic"))
-        } catch (_: Exception) { null }
+        fun fromJson(s: String?): LockSnap? {
+            if (s.isNullOrBlank()) return null
+            return try {
+                val o = JSONObject(s)
+                LockSnap(o.getBoolean("c"), o.getBoolean("s"), o.getBoolean("w"), o.getBoolean("st"), o.getBoolean("tp"), o.getBoolean("to"),
+                    o.getBoolean("sa"), o.getBoolean("ba"), o.getBoolean("ic"))
+            } catch (_: Exception) {
+                null
+            }
+        }
     }
 }
 
