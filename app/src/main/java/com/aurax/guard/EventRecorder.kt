@@ -90,6 +90,7 @@ object EventRecorder {
                 charging = meta.charging,
                 network = meta.network,
                 extra = extraText,
+                guard = try { com.aurax.guard.smart.Timeline.guardTag(Prefs.guardOn(app), GuardService.instance != null, com.aurax.guard.smart.BatterySaver.active(app), com.aurax.guard.smart.SmartPrefs.lockdownOn(app)) } catch (_: Exception) { "" },
             )
             var rec = rec0
             try {

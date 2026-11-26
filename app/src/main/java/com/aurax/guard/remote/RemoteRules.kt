@@ -8,7 +8,7 @@ enum class Decision { RUN, DENY_MASTER_OFF, DENY_FEATURE_OFF, COOLDOWN, RATE_LIM
 
 /** Pure rules for Telegram remote control: parsing, who may command, limits, polling speed. Unit tested. */
 object RemoteRules {
-    val COMMANDS = listOf("loc", "photo", "status", "trace", "saver", "boost", "help")
+    val COMMANDS = listOf("loc", "photo", "status", "trace", "saver", "boost", "help", "lockdown", "normal")
     const val MAX_AGE_MS = 10 * 60_000L
     const val MAX_PER_HOUR = 20
 
@@ -36,6 +36,7 @@ object RemoteRules {
         "trace" -> 60_000L
         "boost" -> 120_000L
         "saver" -> 5_000L
+        "lockdown", "normal" -> 30_000L
         else -> 10_000L // status, help
     }
 
@@ -49,7 +50,7 @@ object RemoteRules {
         val featureOk = when (c.name) {
             "loc", "trace" -> locOn
             "photo" -> photoOn
-            "status", "saver", "boost" -> modeOn
+            "status", "saver", "boost", "lockdown", "normal" -> modeOn
             else -> true // help
         }
         if (!featureOk) return Decision.DENY_FEATURE_OFF
@@ -111,7 +112,7 @@ object RemoteRules {
         fun f(b: Boolean) = if (b) "" else " [OFF]"
         return "Commands:\n" +
             "/loc - abhi location${f(loc)}\n/photo - photo + location${f(photo)}\n/trace - location + status + trail${f(loc)}\n" +
-            "/status - battery, guards, queue${f(mode)}\n/saver on|off - battery saver${f(mode)}\n/boost - ek extra snapshot${f(mode)}\n/help - ye list\n" +
+            "/status - battery, guards, queue${f(mode)}\n/saver on|off - battery saver${f(mode)}\n/boost - ek extra snapshot${f(mode)}\n/lockdown - Tactical Lockdown ON${f(mode)}\n/normal - Lockdown OFF, purani settings wapas${f(mode)}\n/help - ye list\n" +
             "Jawab phone ke polling samay par aata hai (1-15 min). Koi command file delete ya protection band nahi kar sakta."
     }
 }

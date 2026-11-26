@@ -113,7 +113,7 @@ class HomeTab(
                 on, com.aurax.guard.telegram.TelegramConfig.hasToken(c) && com.aurax.guard.telegram.TelegramConfig.chatId(c).isNotBlank(),
                 com.aurax.guard.telegram.TelegramConfig.enabled(c),
                 try { EventStore.pendingCount(c) } catch (_: Exception) { 0 },
-                sm.traceOn(c), sm.state(c).active, com.aurax.guard.smart.BatterySaver.active(c), missing.isEmpty(), com.aurax.guard.GuardService.instance != null,
+                sm.traceOn(c), sm.state(c).active, com.aurax.guard.smart.BatterySaver.active(c), missing.isEmpty(), com.aurax.guard.GuardService.instance != null, sm.lockdownOn(c),
             )
             val sc = Ui.card(c, null, 12, drops = 0)
             items.forEach { it0 ->
@@ -128,6 +128,36 @@ class HomeTab(
                 sc.addView(row)
             }
             body.addView(sc)
+        } catch (_: Exception) {
+        }
+
+        // ---- quick command bar ----
+        try {
+            val lock = com.aurax.guard.smart.Lockdown.active(c)
+            val saverNow = com.aurax.guard.smart.BatterySaver.active(c)
+            fun q(label: String, sub: String, on: Boolean, go: () -> Unit) = LinearLayout(c).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+                minimumHeight = Ui.dp(c, 56)
+                setPadding(Ui.dp(c, 12), Ui.dp(c, 8), Ui.dp(c, 12), Ui.dp(c, 8))
+                background = Ui.glass(c, 18, if (on) Ui.emerald else null, strong = on)
+                addView(Ui.text(c, label, 13f, bold = true))
+                addView(Ui.text(c, sub, 11f, color = if (on) Ui.emerald else Ui.dim))
+                setOnClickListener { go() }
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { rightMargin = Ui.dp(c, 8) }
+            }
+            val rowQ = LinearLayout(c).apply { orientation = LinearLayout.HORIZONTAL }
+            rowQ.addView(q("System Audit", "Permissions", false) { actions.openReadiness() })
+            rowQ.addView(q("Last Snapshot", "Aakhri alert", false) { actions.showLastSnapshot() })
+            rowQ.addView(q("Fast Imp Copy", "Verified copy", false) { actions.openFastCopy() })
+            rowQ.addView(q("Battery Saver", if (saverNow) "Active" else "Off", saverNow) { actions.toggleSaver(); refresh() })
+            rowQ.addView(q("Lockdown", if (lock) "Active" else "Off", lock) { actions.toggleLockdown(); refresh() })
+            body.addView(android.widget.HorizontalScrollView(c).apply {
+                isHorizontalScrollBarEnabled = false
+                setPadding(0, Ui.dp(c, 4), 0, Ui.dp(c, 4))
+                addView(rowQ)
+                layoutParams = Ui.lp(c, 8)
+            })
         } catch (_: Exception) {
         }
 

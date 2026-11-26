@@ -80,6 +80,10 @@ class EmergencySettingsActivity : Activity() {
                     .setNegativeButton("Chalu rakhein") { _, _ -> render() })
             }
         })
+        ms.addView(sw("Tactical Lockdown (sab tamper guard ek saath)", { Lockdown.active(c) }) { on ->
+            val a = applicationContext
+            Thread { if (on) Lockdown.enter(a, true) else Lockdown.exit(a, true); runOnUiThread { if (!isDestroyed) render() } }.start()
+        })
         ms.addView(sw("Jhatka lagne par screen lock", { Prefs.snatchLockOn(c) }) { Prefs.setSnatchLockOn(c, it); restartGuard() })
         ms.addView(sw("Haath mat lagao (Park) mode", { Prefs.parkOn(c) }) { Prefs.setParkOn(c, it); restartGuard() })
         ms.addView(sw("Siren", { Prefs.sirenOn(c) }) { Prefs.setSirenOn(c, it) })

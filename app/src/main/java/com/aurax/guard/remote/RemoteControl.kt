@@ -136,6 +136,8 @@ object RemoteControl {
                     ) {}
                 }
                 "boost" -> TraceEngine.remoteSnapshot(app)
+                "lockdown" -> { com.aurax.guard.smart.Lockdown.enter(app, false); reply(app, "/lockdown", "Tactical Lockdown ON.\n" + status(app)) }
+                "normal" -> { com.aurax.guard.smart.Lockdown.exit(app, false); reply(app, "/normal", "Lockdown OFF, purani settings wapas. Thief Protection chalu hai.\n" + status(app)) }
                 "saver" -> when (cmd.arg) {
                     "on", "off" -> {
                         SmartPrefs.setSaverManual(app, cmd.arg == "on")

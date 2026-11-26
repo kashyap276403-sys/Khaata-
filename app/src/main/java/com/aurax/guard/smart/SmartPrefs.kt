@@ -46,6 +46,12 @@ object SmartPrefs {
     fun heartbeatLast(c: Context) = p(c).getLong("hb_last", 0L)
     fun setHeartbeatLast(c: Context, v: Long) = p(c).edit().putLong("hb_last", v).apply()
 
+    // ---- tactical lockdown ----
+    fun lockdownOn(c: Context) = b(c, "lockdown", false)
+    fun setLockdownOn(c: Context, v: Boolean) = sb(c, "lockdown", v)
+    fun lockdownSaved(c: Context) = p(c).getString("lockdown_saved", "") ?: ""
+    fun setLockdownSaved(c: Context, v: String) = p(c).edit().putString("lockdown_saved", v).apply()
+
     // ---- APK / file check ----
     fun apkScanOn(c: Context) = b(c, "apk_on", true)
     fun setApkScanOn(c: Context, v: Boolean) = sb(c, "apk_on", v)

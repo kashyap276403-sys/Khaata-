@@ -88,6 +88,7 @@ class ActivityTab(private val act: Activity, private val openQueue: () -> Unit) 
         val tools = Ui.card(c, null, 14)
         tools.addView(Ui.text(c, "Log tools", 15f, bold = true))
         tools.addView(Ui.button(c, "Summary copy karein", Ui.Btn.GHOST, 8) { copySummary(shown.ifEmpty { alerts }) })
+        tools.addView(Ui.button(c, "Cyber Timeline export / share", Ui.Btn.GHOST, 6) { exportTimeline(shown.ifEmpty { alerts }) })
         tools.addView(Ui.button(c, "Bheji ja chuki / sirf-local alerts saaf karein", Ui.Btn.GHOST, 6) { confirmClearAlerts(alerts) })
         tools.addView(Ui.button(c, "System events log saaf karein", Ui.Btn.DANGER, 6) { confirmClearLog() })
         tools.addView(Ui.dimText(c, "Queue me jo alert abhi Telegram par bhejna baaki hai wo kabhi nahi hatayi jati."))
@@ -122,6 +123,23 @@ class ActivityTab(private val act: Activity, private val openQueue: () -> Unit) 
                 (riskFilter == null || r.risk == riskFilter) &&
                 (q.isEmpty() || (r.reason + " " + r.locationNote + " " + r.network + " " + r.device).lowercase().contains(q))
         }
+    }
+
+    /** User-started only: nothing is shared unless you pick an app in the share sheet. */
+    private fun exportTimeline(list: List<EventRecord>) {
+        fun share(withLoc: Boolean) {
+            try {
+                val txt = com.aurax.guard.smart.Timeline.export(list, com.aurax.guard.telegram.TelegramConfig.label(act), System.currentTimeMillis(), withLoc)
+                act.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_SUBJECT, "Cyber Incident Timeline").putExtra(Intent.EXTRA_TEXT, txt), "Timeline share karein"))
+            } catch (_: Exception) {
+                Toast.makeText(act, "Share nahi hua", Toast.LENGTH_SHORT).show()
+            }
+        }
+        Ui.showGlass(android.app.AlertDialog.Builder(act).setTitle("Timeline export")
+            .setMessage("${list.size.coerceAtMost(200)} events ka text banega (samay, battery, network, guard state, threat). Location Maps link ke roop me ja sakti hai: sirf bharosemand jagah bhejein.")
+            .setPositiveButton("Bina location") { _, _ -> share(false) }
+            .setNeutralButton("Location ke saath") { _, _ -> share(true) }
+            .setNegativeButton("Rehne dein", null))
     }
 
     private fun copySummary(list: List<EventRecord>) {

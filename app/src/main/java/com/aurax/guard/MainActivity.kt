@@ -563,6 +563,25 @@ class MainActivity : Activity(), HomeActions {
 
     override fun openPhotos() = startActivity(Intent(this, PhotosActivity::class.java))
     override fun openQueue() = startActivity(Intent(this, EventsActivity::class.java))
+    override fun openFastCopy() = startActivity(Intent(this, com.aurax.guard.copy.FastCopyActivity::class.java))
+    override fun toggleLockdown() {
+        if (com.aurax.guard.smart.Lockdown.active(this)) {
+            Thread { com.aurax.guard.smart.Lockdown.exit(applicationContext, true) }.start()
+            Toast.makeText(this, "Lockdown band: purani settings wapas (Thief Protection chalu rehta hai)", Toast.LENGTH_LONG).show()
+        } else {
+            com.aurax.guard.ui.Ui.showGlass(android.app.AlertDialog.Builder(this).setTitle("Tactical Lockdown chalu karein?")
+                .setMessage("Ek saath chalu hoga: SIM/charger/USB tamper alert, galat password photo, stealth (awaaz nahi), emergency trace aur low-battery survival. Thief Protection kabhi band nahi hota, aur har ghante GPS nahi chalta. Band karne par purani settings wapas aati hain.")
+                .setPositiveButton("Chalu karein") { _, _ ->
+                    Thread { com.aurax.guard.smart.Lockdown.enter(applicationContext, true) }.start()
+                    Toast.makeText(this, "Tactical Lockdown chalu", Toast.LENGTH_LONG).show()
+                }.setNegativeButton("Rehne dein", null))
+        }
+    }
+    override fun showLastSnapshot() {
+        val last = try { EventStore.readAll(this).maxByOrNull { it.timeMs } } catch (_: Exception) { null }
+        val msg = if (last == null) "Abhi koi alert/snapshot nahi hai." else last.report() + (if (last.extra.isNotBlank()) "\n" + last.extra else "") + (if (last.smart.isNotBlank()) "\n" + last.smart else "")
+        com.aurax.guard.ui.Ui.showGlass(android.app.AlertDialog.Builder(this).setTitle("Last snapshot").setMessage(msg).setPositiveButton("Theek hai", null))
+    }
     override fun openApkScan() = startActivity(Intent(this, com.aurax.guard.smart.ApkScanActivity::class.java))
     override fun toggleSaver() {
         val v = !com.aurax.guard.smart.SmartPrefs.saverManual(this)

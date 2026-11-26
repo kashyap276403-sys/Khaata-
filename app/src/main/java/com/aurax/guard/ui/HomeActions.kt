@@ -13,6 +13,9 @@ interface HomeActions {
     fun openAi()
     fun openEmergency() {}
     fun openApkScan() {}
+    fun showLastSnapshot() {}
+    fun openFastCopy() {}
+    fun toggleLockdown() {}
     fun toggleSaver() {}
     fun openAlerts()
     fun openControls()

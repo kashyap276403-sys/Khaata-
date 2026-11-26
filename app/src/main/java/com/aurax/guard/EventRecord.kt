@@ -40,6 +40,7 @@ data class EventRecord(
     val risk: Int = -1, // 0 low, 1 medium, 2 high, -1 unknown
     val threat: Int = -1, // 0-100 threat score, -1 unknown
     val extra: String = "", // trail / digest text
+    val guard: String = "", // guard / saver / lockdown state when recorded
 ) {
     val mapsLink: String? get() = if (lat != null && lon != null) MapsLink.of(lat, lon) else null
 
@@ -68,6 +69,7 @@ data class EventRecord(
         put("rk", risk)
         put("th", threat)
         put("ex", extra)
+        put("gs", guard)
     }.toString()
 
     /** Plain-text report (what a Telegram message would contain later). */
@@ -120,6 +122,7 @@ data class EventRecord(
                 risk = o.optInt("rk", -1),
                 threat = o.optInt("th", -1),
                 extra = o.optString("ex", ""),
+                guard = o.optString("gs", ""),
             )
         }
     }
