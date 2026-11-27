@@ -13,7 +13,7 @@ class RemoteTest3 {
         assertEquals(60_000L, RemoteRules.pollIntervalMs(true, false, false, 0, Urgency.RECENT_CMD, 80))
         // nearly dead battery: relax to 5 minutes
         assertEquals(5 * 60_000L, RemoteRules.pollIntervalMs(false, false, false, 0, Urgency.LOCKDOWN, 8))
-        assertEquals(2 * 60_000L, RemoteRules.pollIntervalMs(false, true, false, 0, Urgency.LOCKDOWN, 8) .coerceAtMost(2 * 60_000L)) // charging: not relaxed
+        assertEquals(60_000L, RemoteRules.pollIntervalMs(false, true, false, 0, Urgency.LOCKDOWN, 8)) // charging: not relaxed (normal charger cadence)
         // never aggressive: always >= 1 minute, and offline backoff is capped at 10 min when urgent
         assertTrue(RemoteRules.pollIntervalMs(true, true, false, 0, Urgency.RECENT_CMD) >= 60_000L)
         assertEquals(10 * 60_000L, RemoteRules.pollIntervalMs(false, false, false, 5, Urgency.LOCKDOWN, 60))
