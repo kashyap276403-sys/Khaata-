@@ -45,6 +45,8 @@ object SmartScheduler {
             if (GuardRules.shouldRestart(Prefs.guardOn(app), com.aurax.guard.GuardService.instance != null)) {
                 com.aurax.guard.GuardService.start(app, false)
                 Prefs.log(app, "Watchdog: guard ruka tha, dobara chalu kiya")
+            } else if (Prefs.guardOn(app)) {
+                com.aurax.guard.GuardService.instance?.ensureSensor()
             }
         } catch (e: Exception) {
             Prefs.log(app, "Watchdog: guard dobara chalu nahi hua (${e.javaClass.simpleName}); app kholte hi chalu hoga")

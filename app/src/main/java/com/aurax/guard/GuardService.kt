@@ -58,6 +58,20 @@ class GuardService : Service(), SensorEventListener {
     private var netCallback: android.net.ConnectivityManager.NetworkCallback? = null
     @Volatile private var lastNetKick = 0L
     @Volatile private var plugged = false
+    @Volatile private var lastSampleMs = 0L
+
+    /** Watchdog: if motion should be running but the phone stopped delivering sensor data, register it again. */
+    fun ensureSensor() {
+        try {
+            val on = Prefs.snatchLockOn(this) || Prefs.parkOn(this)
+            if (on && com.aurax.guard.smart.GuardRules.sensorStale(true, lastSampleMs, SystemClock.elapsedRealtime())) {
+                sensors.unregisterListener(this)
+                startMotion()
+                Prefs.log(this, "Motion sensor chup tha, dobara chalu kiya")
+            }
+        } catch (_: Exception) {
+        }
+    }
     @Volatile private var quietUntilElapsed = 0L
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -140,7 +154,10 @@ class GuardService : Service(), SensorEventListener {
             minSamples = prof.minSamples,
             minDurationMs = prof.minDurationMs,
             dipToleranceMs = prof.dipToleranceMs,
+            hardThreshold = if (SmartPrefs.fastPull(this) && !park) prof.hardThreshold else Float.MAX_VALUE,
+            followThreshold = prof.followThreshold,
         )
+        lastSampleMs = SystemClock.elapsedRealtime()
         val linear = sensors.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
         val sensor = linear ?: sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         if (sensor == null) {
@@ -311,6 +328,7 @@ class GuardService : Service(), SensorEventListener {
     }
 
     private fun handleSensor(e: SensorEvent) {
+        lastSampleMs = SystemClock.elapsedRealtime()
         val v = e.values
         val mag = if (usingLinear) {
             sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])

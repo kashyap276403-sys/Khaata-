@@ -67,6 +67,9 @@ object SmartPrefs {
     // ---- guard behaviour ----
     fun stealth(c: Context) = b(c, "stealth", false)
     fun setStealth(c: Context, v: Boolean) = sb(c, "stealth", v)
+    /** Fast-pull catch (one very hard yank followed by carrying away). ON by default; own switch in Settings. */
+    fun fastPull(c: Context) = b(c, "fast_pull", true)
+    fun setFastPull(c: Context, v: Boolean) = sb(c, "fast_pull", v)
     fun ignoreCharging(c: Context) = b(c, "ign_chg", false)
     fun setIgnoreCharging(c: Context, v: Boolean) = sb(c, "ign_chg", v)
     fun mode(c: Context) = p(c).getString("mode", "") ?: ""

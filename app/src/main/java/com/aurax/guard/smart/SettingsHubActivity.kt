@@ -82,6 +82,7 @@ class SettingsHubActivity : Activity() {
             Thread { if (on) Lockdown.enter(ap, true) else Lockdown.exit(ap, true); runOnUiThread { if (!isDestroyed) render() } }.start()
         })
         a.addView(sw("Jhatka lagne par screen lock", "Phone chheene par lock.", { Prefs.snatchLockOn(c) }) { Prefs.setSnatchLockOn(c, it); restartGuard() })
+        a.addView(sw("Tez chheen pakad (fast-pull)", "Ek bahut zor ka jhatka + phone ke saath le jaana. Girne/takrane par nahi.", { SmartPrefs.fastPull(c) }) { SmartPrefs.setFastPull(c, it); try { GuardService.instance?.reloadMotion() } catch (_: Exception) {} })
         a.addView(sw("Haath mat lagao (Park) mode", "Table par rakhe phone ko chhute hi alarm.", { Prefs.parkOn(c) }) { Prefs.setParkOn(c, it); restartGuard() })
         a.addView(sw("Siren", "Awaaz wala alarm.", { Prefs.sirenOn(c) }) { Prefs.setSirenOn(c, it) })
         a.addView(sw("Stealth / Silent", "Awaaz nahi: sirf lock + alert.", { SmartPrefs.stealth(c) }) { SmartPrefs.setStealth(c, it) })
@@ -109,6 +110,7 @@ class SettingsHubActivity : Activity() {
         s.addView(sw("APK / file check", "Download ki jaanch (sirf report).", { SmartPrefs.apkScanOn(c) }) { SmartPrefs.setApkScanOn(c, it) })
         body.addView(s)
 
+        body.addView(link("Test Mode", "Safe jhatka simulation + guard check (koi asli lock/siren nahi)", TestModeActivity::class.java))
         body.addView(Ui.text(c, "Aur settings", 16f, bold = true).apply { setPadding(Ui.dp(c, 4), Ui.dp(c, 18), 0, Ui.dp(c, 2)) })
         body.addView(link("Telegram bot", "Token, Chat ID, device label, test alert", TelegramSettingsActivity::class.java))
         body.addView(link("Alert controls", "Alert types, quiet timer, sensitivity", AlertSettingsActivity::class.java))

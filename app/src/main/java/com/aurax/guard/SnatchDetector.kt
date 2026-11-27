@@ -18,7 +18,19 @@ class SnatchDetector(
     private val minDurationMs: Long = 0,
     /** A short dip below the threshold (up to this long) does not restart the count, because real jerks are bumpy. */
     private val dipToleranceMs: Long = 0,
+    /**
+     * Fast pull: ONE very hard spike (>= [hardThreshold]) that is followed within [followWindowMs] by at least
+     * [followSamples] samples that keep moving (>= [followThreshold]) = the phone was yanked away and is being carried off.
+     * A drop or a knock gives a spike and then stillness, so it does not count. Float.MAX_VALUE = off (default).
+     */
+    private val hardThreshold: Float = Float.MAX_VALUE,
+    private val followThreshold: Float = 0f,
+    private val followSamples: Int = 3,
+    private val followWindowMs: Long = 500,
+    private val followMinGapMs: Long = 40,
 ) {
+    private var hardAtMs = Long.MIN_VALUE
+    private var follow = 0
     private var lastTriggerMs = Long.MIN_VALUE
     private var run = 0
     private var runStartMs = Long.MIN_VALUE
@@ -26,6 +38,8 @@ class SnatchDetector(
 
     /** Forget any half-finished movement (used while the guard is deliberately ignoring motion). */
     fun reset() {
+        hardAtMs = Long.MIN_VALUE
+        follow = 0
         run = 0
         runStartMs = Long.MIN_VALUE
         lastStrongMs = Long.MIN_VALUE
@@ -34,6 +48,24 @@ class SnatchDetector(
     fun onSample(magnitude: Float, nowMs: Long): Boolean {
         if (nowMs - startMs < armDelayMs) return false
         if (lastTriggerMs != Long.MIN_VALUE && nowMs - lastTriggerMs < cooldownMs) return false
+        if (hardThreshold < Float.MAX_VALUE) {
+            if (magnitude >= hardThreshold) {
+                hardAtMs = nowMs
+                follow = 0
+            } else if (hardAtMs != Long.MIN_VALUE) {
+                if (nowMs - hardAtMs > followWindowMs) {
+                    hardAtMs = Long.MIN_VALUE
+                    follow = 0
+                } else if (magnitude >= followThreshold && nowMs - hardAtMs >= followMinGapMs) {
+                    follow++
+                    if (follow >= followSamples) {
+                        reset()
+                        lastTriggerMs = nowMs
+                        return true
+                    }
+                }
+            }
+        }
         if (magnitude < threshold) {
             if (lastStrongMs == Long.MIN_VALUE || nowMs - lastStrongMs > dipToleranceMs) {
                 run = 0

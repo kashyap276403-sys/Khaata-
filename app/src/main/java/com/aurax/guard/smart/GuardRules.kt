@@ -10,6 +10,10 @@ object GuardRules {
     /** A mode may turn Park ON but never switches an existing Park setting OFF behind your back. */
     fun parkAfterMode(currentPark: Boolean, modePark: Boolean): Boolean = currentPark || modePark
 
+    /** Motion should be running but no sensor sample for [maxAgeMs]: the phone dropped the listener. */
+    fun sensorStale(motionEnabled: Boolean, lastSampleMs: Long, nowMs: Long, maxAgeMs: Long = 180_000L): Boolean =
+        motionEnabled && lastSampleMs > 0 && nowMs - lastSampleMs > maxAgeMs
+
     /** Protection status word for Home. */
     fun status(guardOn: Boolean, running: Boolean, permsOk: Boolean): String =
         if (!guardOn) "Off" else if (!running) "Ruka hua" else if (permsOk) "Active" else "Adhoora"

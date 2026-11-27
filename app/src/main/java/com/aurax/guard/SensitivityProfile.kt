@@ -12,6 +12,9 @@ data class SensitivityProfile(
     val dipToleranceMs: Long,
     val armDelayMs: Long,
     val cooldownMs: Long,
+    /** Fast-pull settings (see [SnatchDetector]); MAX_VALUE = not available (Park mode). */
+    val hardThreshold: Float = Float.MAX_VALUE,
+    val followThreshold: Float = 0f,
 ) {
     companion object {
         fun forLevel(level: Int, park: Boolean): SensitivityProfile {
@@ -20,9 +23,9 @@ data class SensitivityProfile(
                 return SensitivityProfile(3f, 2, 120, 60, 10_000, 15_000)
             }
             return when (level.coerceIn(0, 2)) {
-                0 -> SensitivityProfile(14f, 3, 120, 80, 5_000, 10_000)
-                1 -> SensitivityProfile(20f, 3, 180, 80, 5_000, 15_000)
-                else -> SensitivityProfile(28f, 4, 250, 100, 5_000, 20_000)
+                0 -> SensitivityProfile(14f, 3, 120, 80, 5_000, 10_000, 14f * 1.8f, 14f * 0.5f)
+                1 -> SensitivityProfile(20f, 3, 180, 80, 5_000, 15_000, 20f * 1.8f, 20f * 0.5f)
+                else -> SensitivityProfile(28f, 4, 250, 100, 5_000, 20_000, 28f * 1.8f, 28f * 0.5f)
             }
         }
 
