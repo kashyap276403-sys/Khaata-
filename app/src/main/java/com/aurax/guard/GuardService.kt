@@ -55,6 +55,8 @@ class GuardService : Service(), SensorEventListener {
     private var screenReceiver: BroadcastReceiver? = null
     private var batteryReceiver: BroadcastReceiver? = null
     private var levelReceiver: BroadcastReceiver? = null
+    private var netCallback: android.net.ConnectivityManager.NetworkCallback? = null
+    @Volatile private var lastNetKick = 0L
     @Volatile private var plugged = false
     @Volatile private var quietUntilElapsed = 0L
 
@@ -77,6 +79,7 @@ class GuardService : Service(), SensorEventListener {
         if (Prefs.chargerAlarmOn(this)) registerCharger()
         registerSim()
         registerLevel()
+        registerNet()
         com.aurax.guard.smart.SmartScheduler.arm(this)
         registerScreen()
         registerBattery()
@@ -236,6 +239,30 @@ class GuardService : Service(), SensorEventListener {
         }
     }
 
+    /** Internet came back: send whatever waited in the offline queue (one kick per 10 s at most; the dispatcher never double-sends). */
+    private fun registerNet() {
+        if (netCallback != null) return
+        try {
+            val cm = getSystemService(android.net.ConnectivityManager::class.java)
+            val cb = object : android.net.ConnectivityManager.NetworkCallback() {
+                override fun onAvailable(network: android.net.Network) {
+                    val now = SystemClock.elapsedRealtime()
+                    if (now - lastNetKick < 10_000L) return
+                    lastNetKick = now
+                    try { com.aurax.guard.telegram.TelegramDispatcher.kick(this@GuardService) } catch (_: Exception) {}
+                }
+            }
+            cm.registerDefaultNetworkCallback(cb)
+            netCallback = cb
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun unregisterNet() {
+        try { netCallback?.let { getSystemService(android.net.ConnectivityManager::class.java).unregisterNetworkCallback(it) } } catch (_: Exception) {}
+        netCallback = null
+    }
+
     private fun unregisterLevel() {
         levelReceiver?.let { try { unregisterReceiver(it) } catch (_: Exception) {} }
         levelReceiver = null
@@ -363,6 +390,7 @@ class GuardService : Service(), SensorEventListener {
         unregisterScreen()
         unregisterBattery()
         unregisterLevel()
+        unregisterNet()
         if (instance === this) {
             instance = null
             cameraCapable = false

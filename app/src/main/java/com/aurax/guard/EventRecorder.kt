@@ -58,6 +58,7 @@ object EventRecorder {
         val fixRef = AtomicReference<LocationFetcher.Fix?>(null)
         val locNoteRef = AtomicReference("")
         val photoRef = AtomicReference<String?>(null)
+        val photoFailRef = AtomicReference<String?>(null)
         // routine messages (digest, heartbeat, remote replies) carry no location and no audio: saves battery
         val light = AlertType.classify(reason) == AlertType.DIGEST
         val wantAudio = !light && AudioClip.canRecord(app)
@@ -74,7 +75,8 @@ object EventRecorder {
                     com.aurax.guard.smart.TraceRules.note(fx?.let { com.aurax.guard.smart.Pt(startMs, it.lat, it.lon) }, old, startMs)
                 } else ""
             } catch (_: Exception) { "" }
-            val extraText = listOf(extra ?: "", trail).filter { it.isNotBlank() }.joinToString("\n")
+            val photoNote = if (photo == PhotoMode.CAPTURE_NOW && photoRef.get() == null && photoFailRef.get() != null) "Photo nahi li: ${photoFailRef.get()}" else ""
+            val extraText = listOf(extra ?: "", photoNote, trail).filter { it.isNotBlank() }.joinToString("\n")
             val rec0 = EventRecord(
                 id = UUID.randomUUID().toString(),
                 timeMs = startMs,
@@ -145,7 +147,7 @@ object EventRecorder {
             PhotoMode.NONE -> {}
             PhotoMode.CAPTURE_NOW -> SelfieCapture.runNamed(app, label) { ok, msg, name ->
                 Prefs.log(app, msg)
-                if (ok) photoRef.set(name)
+                if (ok) photoRef.set(name) else photoFailRef.set(msg)
                 partDone()
             }
             PhotoMode.WAIT_FOR_EXTERNAL -> {

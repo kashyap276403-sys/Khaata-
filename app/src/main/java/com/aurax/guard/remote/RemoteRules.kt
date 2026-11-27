@@ -4,6 +4,7 @@ import org.json.JSONObject
 
 data class Cmd(val name: String, val arg: String)
 data class Upd(val id: Long, val chatId: Long?, val fromId: Long?, val text: String, val dateSec: Long, val isPrivate: Boolean)
+enum class Urgency { NONE, TRACE, LOCKDOWN, RECENT_CMD }
 enum class Decision { RUN, DENY_MASTER_OFF, DENY_FEATURE_OFF, COOLDOWN, RATE_LIMIT, UNKNOWN }
 
 /** Pure rules for Telegram remote control: parsing, who may command, limits, polling speed. Unit tested. */
@@ -66,15 +67,45 @@ object RemoteRules {
         return Decision.RUN
     }
 
-    /** How often to look for new commands. Longer when the screen is off or Battery Saver is on; backs off when offline. */
-    fun pollIntervalMs(screenOn: Boolean, charging: Boolean, saver: Boolean, failures: Int): Long {
-        val base = when {
+    const val RECENT_CMD_MS = 10 * 60_000L
+
+    /** Strongest reason to listen faster: you just sent a command > Lockdown > emergency trace / boost. */
+    fun urgency(lockdown: Boolean, traceActive: Boolean, boostActive: Boolean, recentCommand: Boolean): Urgency = when {
+        recentCommand -> Urgency.RECENT_CMD
+        lockdown -> Urgency.LOCKDOWN
+        traceActive || boostActive -> Urgency.TRACE
+        else -> Urgency.NONE
+    }
+
+    /** Urgent cadence: still gentle (never under 1 min) and relaxed again when the battery is nearly dead. */
+    fun urgentBaseMs(u: Urgency, screenOn: Boolean, battery: Int, charging: Boolean): Long? {
+        val base = when (u) {
+            Urgency.NONE -> return null
+            Urgency.RECENT_CMD -> if (screenOn) 60_000L else 120_000L
+            Urgency.LOCKDOWN -> if (screenOn) 60_000L else 120_000L
+            Urgency.TRACE -> if (screenOn) 120_000L else 180_000L
+        }
+        return if (battery in 0..10 && !charging) maxOf(base, 5 * 60_000L) else base
+    }
+
+    /** How often to look for new commands. Longer when the screen is off or Battery Saver is on; faster (but still light) during lockdown, trace or right after a command; backs off when offline. */
+    fun pollIntervalMs(screenOn: Boolean, charging: Boolean, saver: Boolean, failures: Int, urgency: Urgency = Urgency.NONE, battery: Int = 100): Long {
+        val normal = when {
             saver && !charging -> if (screenOn) 5 * 60_000L else 15 * 60_000L
             screenOn || charging -> 60_000L
             else -> 5 * 60_000L
         }
+        val urgent = urgentBaseMs(urgency, screenOn, battery, charging)
+        val base = if (urgent != null) minOf(normal, urgent) else normal
         val back = 1L shl failures.coerceIn(0, 3)
-        return (base * back).coerceAtMost(30 * 60_000L)
+        return (base * back).coerceAtMost(if (urgent != null) 10 * 60_000L else 30 * 60_000L)
+    }
+
+    /** Why a photo cannot be taken right now (null = it can). */
+    fun photoReason(guardStartedFromApp: Boolean, cameraPermission: Boolean): String? = when {
+        !cameraPermission -> "camera ijazat nahi mili"
+        !guardStartedFromApp -> "Guard app se chalu nahi kiya gaya, isliye lock-screen par camera nahi khulta (app kholkar Guard dobara ON karein)"
+        else -> null
     }
 
     fun nextPollAt(lastPollMs: Long, nowMs: Long, intervalMs: Long): Long = maxOf(nowMs + 20_000L, lastPollMs + intervalMs)

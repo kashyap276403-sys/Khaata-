@@ -115,11 +115,18 @@ object TelegramDispatcher {
                     var res: TgResult = TgResult.Ok
                     if (!TelegramRules.msgDone(done, t.id)) {
                         res = sendRecord(app, t.token, t.chatId, label, rec)
-                        if (res is TgResult.Ok) done = done + t.id
+                        if (res is TgResult.Ok) {
+                            done = done + t.id
+                            // remember it right away: if the app dies now, the next run will not send this message again
+                            try { val d0 = TelegramRules.joinDone(done); EventStore.update(app, rec.id) { it.copy(doneTo = d0) } } catch (_: Exception) {}
+                        }
                     }
                     if (res is TgResult.Ok && hasAudio && !TelegramRules.audioDone(done, t.id)) {
                         res = sendAudio(app, t.token, t.chatId, label, rec)
-                        if (res is TgResult.Ok) done = done + "${t.id}:a"
+                        if (res is TgResult.Ok) {
+                            done = done + "${t.id}:a"
+                            try { val d1 = TelegramRules.joinDone(done); EventStore.update(app, rec.id) { it.copy(doneTo = d1) } } catch (_: Exception) {}
+                        }
                     }
                     val r = res
                     val doneNow = TelegramRules.joinDone(done)

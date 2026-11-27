@@ -31,7 +31,12 @@ object RemoteControl {
 
     fun interval(app: Context): Long {
         val m = DeviceInfo.read(app)
-        return RemoteRules.pollIntervalMs(screenOn(app), m.charging, BatterySaver.active(app), RemotePrefs.failures(app))
+        val now = System.currentTimeMillis()
+        val u = RemoteRules.urgency(
+            com.aurax.guard.smart.Lockdown.active(app), SmartPrefs.state(app).active, SmartPrefs.boostOn(app) && now < SmartPrefs.boostUntil(app),
+            now - RemotePrefs.lastCmdMs(app) < RemoteRules.RECENT_CMD_MS,
+        )
+        return RemoteRules.pollIntervalMs(screenOn(app), m.charging, BatterySaver.active(app), RemotePrefs.failures(app), u, m.batteryPct)
     }
 
     /** When the alarm should look next (null when remote control is off). */
@@ -69,6 +74,7 @@ object RemoteControl {
             RemotePrefs.setLastPollMs(app, now)
             if (body == null) { RemotePrefs.setFailures(app, RemotePrefs.failures(app) + 1); return }
             RemotePrefs.setFailures(app, 0)
+            try { if (TelegramDispatcher.hasWaiting(app)) TelegramDispatcher.kick(app) } catch (_: Exception) {} // we are online: flush the queue too
             val ups = RemoteRules.parseUpdates(body)
             if (ups.isEmpty()) return
             RemotePrefs.setOffset(app, ups.maxOf { it.id } + 1) // confirm first: a crash never replays a command
@@ -82,6 +88,7 @@ object RemoteControl {
             Prefs.log(app, "Remote poll me dikkat (${e.javaClass.simpleName})")
         } finally {
             running = false
+            try { com.aurax.guard.smart.SmartScheduler.arm(app) } catch (_: Exception) {}
         }
     }
 
@@ -119,6 +126,7 @@ object RemoteControl {
             return
         }
         RemotePrefs.setLastRun(app, cmd.name, now)
+        RemotePrefs.setLastCmdMs(app, now) // keep listening a bit faster for the next 10 minutes
         RemotePrefs.addRun(app, now)
         run(app, cmd)
     }
@@ -145,10 +153,11 @@ object RemoteControl {
                 "loc" -> EventRecorder.trigger(app, "Emergency trace: remote /loc", label(app), PhotoMode.NONE, "Remote /loc: abhi ki location.") { scheduleRetry(app, "loc", it) }
                 "trace" -> EventRecorder.trigger(app, "Emergency trace: remote /trace", label(app), PhotoMode.NONE, "Remote /trace:\n" + status(app)) { scheduleRetry(app, "trace", it) }
                 "photo" -> {
-                    val can = GuardService.cameraCapable
+                    val perm = app.checkSelfPermission(android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                    val why = RemoteRules.photoReason(GuardService.cameraCapable, perm)
                     EventRecorder.trigger(
-                        app, "Emergency trace: remote /photo", label(app), if (can) PhotoMode.CAPTURE_NOW else PhotoMode.NONE,
-                        if (can) "Remote /photo." else "Remote /photo: photo nahi li (camera abhi available nahi, phone locked/guard app se chalu nahi). Location bheji.",
+                        app, "Emergency trace: remote /photo", label(app), if (why == null) PhotoMode.CAPTURE_NOW else PhotoMode.NONE,
+                        if (why == null) "Remote /photo (camera busy ho to wajah neeche likhi hogi)." else "Remote /photo: photo nahi li: $why. Location aur battery bheji.",
                     ) {}
                 }
                 "boost" -> TraceEngine.remoteSnapshot(app)
