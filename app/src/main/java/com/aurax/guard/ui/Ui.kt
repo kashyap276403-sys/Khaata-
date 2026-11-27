@@ -25,11 +25,20 @@ object Ui {
     @Volatile var accent: Accent = Accent.EMERALD
     private var accentLoaded = false
     /** The accent colour (name kept as 'emerald' so every existing screen follows the chosen accent). */
-    val emerald: Int get() = accent.main
+    /** Look style: false = Liquid Glass (default), true = Cyber / Hacker. Saved in the "look" prefs. */
+    @Volatile var cyber = false
+    private val eff: Accent get() = if (cyber) Accent.CYBER else accent
+    val emerald: Int get() = eff.main
+    fun setStyle(c: Context, cyberOn: Boolean) {
+        cyber = cyberOn
+        try { c.getSharedPreferences("look", Context.MODE_PRIVATE).edit().putString("style", if (cyberOn) "cyber" else "glass").apply() } catch (_: Exception) {}
+    }
+    private fun mono(bold: Boolean) = if (bold) Typeface.create(Typeface.MONOSPACE, Typeface.BOLD) else Typeface.MONOSPACE
 
     fun loadAccent(c: Context) {
         try {
             accent = Accent.of(c.getSharedPreferences("look", Context.MODE_PRIVATE).getString("accent", "emerald"))
+            cyber = c.getSharedPreferences("look", Context.MODE_PRIVATE).getString("style", "glass") == "cyber"
         } catch (_: Exception) {
         }
         accentLoaded = true
@@ -70,7 +79,7 @@ object Ui {
         try { c.getSharedPreferences("look", Context.MODE_PRIVATE).getString("theme", "dark") ?: "dark" } catch (_: Exception) { "dark" }
 
     fun setTheme(c: Context, key: String) = c.getSharedPreferences("look", Context.MODE_PRIVATE).edit().putString("theme", ThemePalette.of(key).key).apply()
-    fun palette(c: Context) = ThemePalette.of(themeKey(c))
+    fun palette(c: Context) = if (cyber) ThemePalette.CYBER else ThemePalette.of(themeKey(c))
 
     /** Dark gradient used where a flat (non-glass) background is needed. */
     fun flatGradient(c: Context): GradientDrawable {
@@ -110,6 +119,7 @@ object Ui {
     /** Window/screen background: soft colour glows behind the glass, or plain black when glass is off. */
     fun backdrop(c: Context): android.graphics.drawable.Drawable {
         if (!accentLoaded) loadAccent(c)
+        if (cyber) return CyberBackdrop(c)
         return if (glassOn(c)) LiquidBackdrop(palette(c).withAccent(accent)) else android.graphics.drawable.ColorDrawable(Color.BLACK)
     }
 
@@ -119,6 +129,14 @@ object Ui {
         val tr = if (tint != null) Color.red(tint) else 255
         val tg = if (tint != null) Color.green(tint) else 255
         val tb = if (tint != null) Color.blue(tint) else 255
+        if (cyber) {
+            // terminal card: sharp corners, near-black fill, thin neon border (brighter when tinted)
+            return GradientDrawable().apply {
+                cornerRadius = dp(c, 3).toFloat()
+                setColor(Color.argb(if (strong) 235 else 205, 2, 12, 9))
+                setStroke(dp(c, 1), if (tint != null) Color.argb(200, tr, tg, tb) else Color.argb(120, 0, 255, 153))
+            }
+        }
         if (!glassOn(c)) {
             return GradientDrawable().apply {
                 cornerRadius = r
@@ -164,11 +182,11 @@ object Ui {
             val c = d.context
             val w = d.window ?: return
             val base = GradientDrawable().apply {
-                cornerRadius = dp(c, 30).toFloat()
-                setColor(if (glassOn(c)) palette(c).dialogBase else Color.argb(245, 10, 26, 22))
+                cornerRadius = dp(c, if (cyber) 4 else 30).toFloat()
+                setColor(if (glassOn(c) || cyber) palette(c).dialogBase else Color.argb(245, 10, 26, 22))
             }
             w.setBackgroundDrawable(LayerDrawable(arrayOf(base, glass(c, 30, strong = true))))
-            if (glassOn(c) && Build.VERSION.SDK_INT >= 31) {
+            if (glassOn(c) && !cyber && Build.VERSION.SDK_INT >= 31) {
                 w.addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
                 w.attributes = w.attributes.apply { blurBehindRadius = 24 }
             }
@@ -209,7 +227,7 @@ object Ui {
             val on = intArrayOf(android.R.attr.state_checked)
             val off = intArrayOf(-android.R.attr.state_checked)
             sw.thumbTintList = ColorStateList(arrayOf(on, off), intArrayOf(Color.WHITE, Color.argb(235, 220, 230, 228)))
-            sw.trackTintList = ColorStateList(arrayOf(on, off), intArrayOf((210 shl 24) or (accent.main and 0xFFFFFF), Color.argb(70, 255, 255, 255)))
+            sw.trackTintList = ColorStateList(arrayOf(on, off), intArrayOf((210 shl 24) or (eff.main and 0xFFFFFF), Color.argb(70, 255, 255, 255)))
         } catch (_: Exception) {
         }
         return sw
@@ -232,7 +250,7 @@ object Ui {
             text = s
             textSize = size
             setTextColor(color)
-            if (bold) setTypeface(typeface, Typeface.BOLD)
+            if (cyber) typeface = mono(bold) else if (bold) setTypeface(typeface, Typeface.BOLD)
             setPadding(0, dp(c, 3), 0, dp(c, 3))
         }
 
@@ -256,13 +274,14 @@ object Ui {
         Button(c).apply {
             text = label
             isAllCaps = false
+            if (cyber) typeface = mono(true)
             setTextColor(Color.WHITE)
             background = ripple(c, 28, GradientDrawable().apply {
-                cornerRadius = dp(c, 28).toFloat() // pill: Android caps this at half the height
+                cornerRadius = dp(c, if (cyber) 4 else 28).toFloat() // pill: Android caps this at half the height
                 when (style) {
                     Btn.PRIMARY -> {
-                        setColor((150 shl 24) or (accent.deep and 0xFFFFFF))
-                        setStroke(dp(c, 1), (140 shl 24) or (accent.rim and 0xFFFFFF))
+                        setColor((150 shl 24) or (eff.deep and 0xFFFFFF))
+                        setStroke(dp(c, 1), (140 shl 24) or (eff.rim and 0xFFFFFF))
                     }
                     Btn.GHOST -> {
                         setColor(Color.argb(20, 255, 255, 255))
@@ -278,12 +297,12 @@ object Ui {
     fun badge(c: Context, label: String, color: Int) = TextView(c).apply {
         text = label
         textSize = 12f
-        setTypeface(typeface, Typeface.BOLD)
+        if (cyber) typeface = mono(true) else setTypeface(typeface, Typeface.BOLD)
         setTextColor(color)
         maxLines = 1
         setPadding(dp(c, 10), dp(c, 3), dp(c, 10), dp(c, 3))
         background = GradientDrawable().apply {
-            cornerRadius = dp(c, 12).toFloat()
+            cornerRadius = dp(c, if (cyber) 2 else 12).toFloat()
             setColor(Color.argb(45, Color.red(color), Color.green(color), Color.blue(color)))
             setStroke(dp(c, 1), Color.argb(130, Color.red(color), Color.green(color), Color.blue(color)))
         }
@@ -293,12 +312,12 @@ object Ui {
         text = label
         textSize = 13f
         setTextColor(if (selected) Color.WHITE else dim)
-        if (selected) setTypeface(typeface, Typeface.BOLD)
+        if (cyber) typeface = mono(selected) else if (selected) setTypeface(typeface, Typeface.BOLD)
         setPadding(dp(c, 14), dp(c, 8), dp(c, 14), dp(c, 8))
         background = GradientDrawable().apply {
-            cornerRadius = dp(c, 40).toFloat()
-            setColor(if (selected) (140 shl 24) or (accent.deep and 0xFFFFFF) else Color.argb(20, 255, 255, 255))
-            setStroke(dp(c, 1), if (selected) (200 shl 24) or (accent.main and 0xFFFFFF) else Color.argb(50, 255, 255, 255))
+            cornerRadius = dp(c, if (cyber) 3 else 40).toFloat()
+            setColor(if (selected) (140 shl 24) or (eff.deep and 0xFFFFFF) else Color.argb(20, 255, 255, 255))
+            setStroke(dp(c, 1), if (selected) (200 shl 24) or (eff.main and 0xFFFFFF) else Color.argb(50, 255, 255, 255))
         }
         layoutParams = LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.WRAP_CONTENT,

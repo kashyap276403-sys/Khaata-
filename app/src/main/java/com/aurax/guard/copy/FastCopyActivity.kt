@@ -85,6 +85,7 @@ class FastCopyActivity : Activity() {
         }
         val chosen = items.filter { it.id in picked }
         if (chosen.isEmpty()) return
+        Prefs.log(this, "Copy shuru: ${chosen.size} files")
         busy = true; results = emptyList(); cancel.set(false); progress = "Shuru..."; status = "Copy chal rahi hai..."; render()
         io.execute {
             val out = mutableListOf<Pair<String, Verify>>()
@@ -92,7 +93,10 @@ class FastCopyActivity : Activity() {
             for ((i, it) in chosen.withIndex()) {
                 if (cancel.get()) break
                 runOnUiThread { progress = "${i + 1}/${chosen.size}: ${it.name}"; if (!isDestroyed) render() }
-                out.add(it.name to copyOne(it, destDoc))
+                val v = copyOne(it, destDoc)
+                out.add(it.name to v)
+                if (!v.ok) Prefs.log(this, "Copy MISMATCH: ${it.name}")
+                if ((i + 1) % 10 == 0 || i + 1 == chosen.size) Prefs.log(this, "Copy progress ${i + 1}/${chosen.size}")
             }
             runOnUiThread {
                 if (isDestroyed) return@runOnUiThread

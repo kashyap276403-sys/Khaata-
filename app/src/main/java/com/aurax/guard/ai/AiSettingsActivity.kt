@@ -118,6 +118,11 @@ class AiSettingsActivity : Activity() {
             isChecked = Ui.dropsOn(c)
             setOnCheckedChangeListener { v, on -> if (v.isPressed) { Ui.setDropsOn(c, on); recreate() } }
         })
+        look.addView(Ui.text(c, "Style (turant badalta hai)", 13f, color = Ui.dim).apply { setPadding(0, Ui.dp(c, 6), 0, 0) })
+        look.addView(Ui.chipRow(c, listOf(false to "Liquid Glass", true to "Cyber / Hacker").map { (cy, n) ->
+            Ui.chip(c, n, Ui.cyber == cy) { Ui.setStyle(c, cy); recreate() }
+        }, 6))
+        look.addView(Ui.dimText(c, "Cyber / Hacker: kaala tactical background, neon hara-cyan, terminal jaise sharp card aur monospace akshar. Aapka chuna hua style app band hone ke baad bhi yaad rehta hai."))
         look.addView(Ui.text(c, "Dark theme", 13f, color = Ui.dim).apply { setPadding(0, Ui.dp(c, 10), 0, 0) })
         look.addView(Ui.chipRow(c, com.aurax.guard.ui.ThemePalette.ALL.map { p ->
             Ui.chip(c, p.title, Ui.themeKey(c) == p.key) { Ui.setTheme(c, p.key); recreate() }

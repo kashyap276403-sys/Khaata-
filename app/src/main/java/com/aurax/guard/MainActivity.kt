@@ -77,7 +77,7 @@ class MainActivity : Activity(), HomeActions {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        builtTheme = com.aurax.guard.ui.Ui.themeKey(this) + com.aurax.guard.ui.Ui.accent.key + com.aurax.guard.ui.Ui.glassOn(this)
+        builtTheme = com.aurax.guard.ui.Ui.themeKey(this) + com.aurax.guard.ui.Ui.accent.key + com.aurax.guard.ui.Ui.glassOn(this) + com.aurax.guard.ui.Ui.cyber
         window.statusBarColor = Color.BLACK
         window.navigationBarColor = Color.BLACK
 
@@ -455,7 +455,7 @@ class MainActivity : Activity(), HomeActions {
     override fun onResume() {
         super.onResume()
         // theme or glass switch changed in AI & Look: rebuild this screen once so it matches
-        if (builtTheme.isNotEmpty() && builtTheme != com.aurax.guard.ui.Ui.themeKey(this) + com.aurax.guard.ui.Ui.accent.key + com.aurax.guard.ui.Ui.glassOn(this)) {
+        if (builtTheme.isNotEmpty() && builtTheme != com.aurax.guard.ui.Ui.themeKey(this) + com.aurax.guard.ui.Ui.accent.key + com.aurax.guard.ui.Ui.glassOn(this) + com.aurax.guard.ui.Ui.cyber) {
             recreate()
             return
         }
@@ -563,6 +563,11 @@ class MainActivity : Activity(), HomeActions {
 
     override fun openPhotos() = startActivity(Intent(this, PhotosActivity::class.java))
     override fun openQueue() = startActivity(Intent(this, EventsActivity::class.java))
+    override fun toggleStyle() {
+        com.aurax.guard.ui.Ui.setStyle(this, !com.aurax.guard.ui.Ui.cyber)
+        recreate()
+    }
+    override fun openStream() = startActivity(Intent(this, com.aurax.guard.ui.TelemetryActivity::class.java))
     override fun openFastCopy() = startActivity(Intent(this, com.aurax.guard.copy.FastCopyActivity::class.java))
     override fun toggleLockdown() {
         if (com.aurax.guard.smart.Lockdown.active(this)) {

@@ -52,6 +52,10 @@
             android:exported="false" />
 
         <activity
+            android:name=".ui.TelemetryActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".copy.FastCopyActivity"
             android:exported="false" />
 

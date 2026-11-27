@@ -36,12 +36,12 @@ class BottomNav(
         // transparent black glass: dark see-through body, faint rim (accent-free, never white)
         background = LayerDrawable(arrayOf(
             GradientDrawable().apply {
-                cornerRadius = Ui.dp(c, 36).toFloat()
-                setColor(Color.argb(150, 0, 0, 0))
-                setStroke(Ui.dp(c, 1), Color.argb(70, 255, 255, 255))
+                cornerRadius = Ui.dp(c, if (Ui.cyber) 5 else 36).toFloat()
+                setColor(Color.argb(if (Ui.cyber) 225 else 150, 0, 0, 0))
+                setStroke(Ui.dp(c, 1), if (Ui.cyber) Color.argb(150, 0, 255, 153) else Color.argb(70, 255, 255, 255))
             },
             GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(Color.argb(40, 0, 0, 0), Color.argb(0, 0, 0, 0)))
-                .apply { cornerRadius = Ui.dp(c, 36).toFloat() },
+                .apply { cornerRadius = Ui.dp(c, if (Ui.cyber) 5 else 36).toFloat() },
         ))
         addView(pill)
         addView(row, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT))
@@ -60,6 +60,7 @@ class BottomNav(
                 text = label
                 textSize = 11f
                 gravity = Gravity.CENTER
+                if (Ui.cyber) typeface = android.graphics.Typeface.MONOSPACE
             }
             val box = LinearLayout(c).apply {
                 orientation = LinearLayout.VERTICAL
@@ -74,7 +75,7 @@ class BottomNav(
             row.addView(box)
         }
         pill.background = GradientDrawable().apply {
-            cornerRadius = Ui.dp(c, 28).toFloat()
+            cornerRadius = Ui.dp(c, if (Ui.cyber) 4 else 28).toFloat()
             // accent-tinted, see-through: no white
             setColor((Ui.emerald and 0x00FFFFFF) or (0x44 shl 24))
             setStroke(Ui.dp(c, 1), (Ui.emerald and 0x00FFFFFF) or (0x99 shl 24))

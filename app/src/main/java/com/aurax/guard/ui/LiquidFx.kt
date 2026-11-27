@@ -28,6 +28,8 @@ data class Accent(val key: String, val title: String, val main: Int, val deep: I
         val ROSE = Accent("rose", "Rose", rgbI(255, 100, 150), rgbI(205, 55, 105), rgbI(255, 170, 200))
         val AURORA = Accent("aurora", "Aurora (multi-colour)", rgbI(70, 205, 230), rgbI(60, 120, 220), rgbI(180, 220, 255),
             listOf(rgbI(255, 105, 180), rgbI(140, 110, 255), rgbI(46, 196, 182), rgbI(70, 130, 255)))
+        /** Used only by the Cyber / Hacker style (not offered in the accent list). */
+        val CYBER = Accent("cyber", "Cyber", rgbI(0, 255, 153), rgbI(0, 120, 80), rgbI(0, 229, 255))
         val ALL = listOf(EMERALD, OCEAN, VIOLET, SUNSET, ROSE, AURORA)
         fun of(key: String?) = ALL.firstOrNull { it.key == key } ?: EMERALD
     }
@@ -68,6 +70,11 @@ data class ThemePalette(
             "amoled", "AMOLED black", BLACK_I, BLACK_I, BLACK_I,
             listOf(Glow(0.90f, 0.05f, 0.6f, argbI(34, 46, 196, 182)), Glow(0.05f, 0.9f, 0.5f, argbI(16, 70, 130, 255))),
             28, 40, 0.7f, argbI(248, 0, 0, 0), argbI(255, 0, 0, 0),
+        )
+        /** Cyber / Hacker style: near-black, green-tinted, no soft glows (kept out of ALL: it is a separate look). */
+        val CYBER = ThemePalette(
+            "cyber", "Cyber / Hacker", rgbI(0, 18, 11), rgbI(0, 7, 5), BLACK_I, emptyList(),
+            30, 50, 1f, argbI(240, 2, 10, 8), argbI(240, 0, 8, 6),
         )
         val ALL = listOf(DARK, MIDNIGHT, AMOLED)
         fun of(key: String?) = ALL.firstOrNull { it.key == key } ?: DARK

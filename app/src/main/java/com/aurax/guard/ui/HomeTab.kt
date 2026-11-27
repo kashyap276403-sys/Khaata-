@@ -152,6 +152,8 @@ class HomeTab(
             rowQ.addView(q("Fast Imp Copy", "Verified copy", false) { actions.openFastCopy() })
             rowQ.addView(q("Battery Saver", if (saverNow) "Active" else "Off", saverNow) { actions.toggleSaver(); refresh() })
             rowQ.addView(q("Lockdown", if (lock) "Active" else "Off", lock) { actions.toggleLockdown(); refresh() })
+            rowQ.addView(q("Theme", if (Ui.cyber) "Cyber" else "Glass", Ui.cyber) { actions.toggleStyle() })
+            rowQ.addView(q("Live stream", "Events", false) { actions.openStream() })
             body.addView(android.widget.HorizontalScrollView(c).apply {
                 isHorizontalScrollBarEnabled = false
                 setPadding(0, Ui.dp(c, 4), 0, Ui.dp(c, 4))
@@ -220,6 +222,7 @@ class HomeTab(
             "Smart aur battery" to listOf(
                 Tile(android.R.drawable.ic_menu_compass, "Emergency & Smart", if (com.aurax.guard.smart.SmartPrefs.traceOn(c)) "Trace ON" else "Trace, modes, digest", false) { actions.openEmergency() },
                 Tile(android.R.drawable.ic_menu_day, "Battery saver", if (saverOn) "Active" else "Off (tap: chalu)", false) { actions.toggleSaver(); refresh() },
+                Tile(android.R.drawable.ic_menu_recent_history, "Live stream", "Terminal log", false) { actions.openStream() },
                 Tile(android.R.drawable.ic_menu_search, "APK / file check", if (com.aurax.guard.smart.SmartPrefs.apkScanOn(c)) "Download ki jaanch" else "Off", false) { actions.openApkScan() },
                 Tile(android.R.drawable.ic_menu_search, "Permission check", "Risky apps dekhein", false) { goGuard() },
             ),

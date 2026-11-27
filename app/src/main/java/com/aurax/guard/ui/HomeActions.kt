@@ -16,6 +16,8 @@ interface HomeActions {
     fun showLastSnapshot() {}
     fun openFastCopy() {}
     fun toggleLockdown() {}
+    fun toggleStyle() {}
+    fun openStream() {}
     fun toggleSaver() {}
     fun openAlerts()
     fun openControls()
