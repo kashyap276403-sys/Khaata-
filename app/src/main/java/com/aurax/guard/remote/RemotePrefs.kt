@@ -29,6 +29,9 @@ object RemotePrefs {
     fun setLastRun(c: Context, name: String, v: Long) = p(c).edit().putLong("run_$name", v).apply()
     fun lastNote(c: Context) = p(c).getString("note", "") ?: ""
     fun setLastNote(c: Context, v: String) = p(c).edit().putString("note", v).apply()
+    fun retryAt(c: Context) = p(c).getLong("retry_at", 0L)
+    fun retryCmd(c: Context) = p(c).getString("retry_cmd", "") ?: ""
+    fun setRetry(c: Context, at: Long, cmd: String) = p(c).edit().putLong("retry_at", at).putString("retry_cmd", cmd).apply()
     fun lastDenyMs(c: Context) = p(c).getLong("deny", 0L)
     fun setLastDenyMs(c: Context, v: Long) = p(c).edit().putLong("deny", v).apply()
     fun lastStrangerMs(c: Context) = p(c).getLong("stranger", 0L)

@@ -18,6 +18,7 @@ interface HomeActions {
     fun toggleLockdown() {}
     fun toggleStyle() {}
     fun openStream() {}
+    fun openSettings() {}
     fun toggleSaver() {}
     fun openAlerts()
     fun openControls()

@@ -35,8 +35,23 @@ object RemoteControl {
     }
 
     /** When the alarm should look next (null when remote control is off). */
-    fun nextPollAt(app: Context, now: Long): Long? =
-        if (!active(app)) null else RemoteRules.nextPollAt(RemotePrefs.lastPollMs(app), now, interval(app))
+    fun nextPollAt(app: Context, now: Long): Long? {
+        if (!active(app)) return null
+        val n = RemoteRules.nextPollAt(RemotePrefs.lastPollMs(app), now, interval(app))
+        val r = RemotePrefs.retryAt(app)
+        return if (r > 0) minOf(n, maxOf(r, now + 15_000L)) else n
+    }
+
+    /** One follow-up after a slow/stale location (only once per command, battery-light). */
+    private fun runRetryIfDue(app: Context, now: Long) {
+        val at = RemotePrefs.retryAt(app)
+        if (at <= 0 || now < at) return
+        val cmd = RemotePrefs.retryCmd(app)
+        RemotePrefs.setRetry(app, 0L, "")
+        if (!RemotePrefs.masterOn(app) || !RemotePrefs.locOn(app) || cmd.isEmpty()) return
+        Prefs.log(app, "Remote /$cmd: location dobara try (pehle live fix nahi mila tha)")
+        EventRecorder.trigger(app, "Emergency trace: remote /$cmd retry", label(app), PhotoMode.NONE, "Pehli location purani/adhoori thi, ye dobara koshish hai.") {}
+    }
 
     fun due(app: Context, now: Long) = active(app) && now - RemotePrefs.lastPollMs(app) >= interval(app)
 
@@ -44,6 +59,7 @@ object RemoteControl {
     fun poll(app: Context, force: Boolean = false) {
         if (!active(app) || running) return
         val now = System.currentTimeMillis()
+        try { runRetryIfDue(app, now) } catch (_: Exception) {}
         if (!force && !due(app, now)) return
         running = true
         try {
@@ -126,8 +142,8 @@ object RemoteControl {
             when (cmd.name) {
                 "help" -> reply(app, "/help", RemoteRules.helpText(true, RemotePrefs.locOn(app), RemotePrefs.photoOn(app), RemotePrefs.modeOn(app)))
                 "status" -> reply(app, "/status", status(app))
-                "loc" -> EventRecorder.trigger(app, "Emergency trace: remote /loc", label(app), PhotoMode.NONE, "Remote /loc: abhi ki location.") {}
-                "trace" -> EventRecorder.trigger(app, "Emergency trace: remote /trace", label(app), PhotoMode.NONE, "Remote /trace:\n" + status(app)) {}
+                "loc" -> EventRecorder.trigger(app, "Emergency trace: remote /loc", label(app), PhotoMode.NONE, "Remote /loc: abhi ki location.") { scheduleRetry(app, "loc", it) }
+                "trace" -> EventRecorder.trigger(app, "Emergency trace: remote /trace", label(app), PhotoMode.NONE, "Remote /trace:\n" + status(app)) { scheduleRetry(app, "trace", it) }
                 "photo" -> {
                     val can = GuardService.cameraCapable
                     EventRecorder.trigger(
@@ -151,6 +167,15 @@ object RemoteControl {
             Prefs.log(app, "Remote /${cmd.name} fail (${e.javaClass.simpleName}); protection chalu hai")
         }
         try { TelegramDispatcher.kick(app) } catch (_: Exception) {}
+    }
+
+    private fun scheduleRetry(app: Context, cmd: String, rec: com.aurax.guard.EventRecord) {
+        try {
+            if (RemoteRules.staleFix(rec.lat, rec.locationNote) && RemotePrefs.retryAt(app) == 0L) {
+                RemotePrefs.setRetry(app, System.currentTimeMillis() + RemoteRules.RETRY_MS, cmd)
+                com.aurax.guard.smart.SmartScheduler.arm(app)
+            }
+        } catch (_: Exception) {}
     }
 
     fun status(app: Context): String {

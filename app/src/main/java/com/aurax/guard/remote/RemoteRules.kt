@@ -11,6 +11,13 @@ object RemoteRules {
     val COMMANDS = listOf("loc", "photo", "status", "trace", "saver", "boost", "help", "lockdown", "normal")
     const val MAX_AGE_MS = 10 * 60_000L
     const val MAX_PER_HOUR = 20
+    const val RETRY_MS = 90_000L
+
+    /** True when the location we just sent is missing or only the old last-known one: worth ONE more try soon. */
+    fun staleFix(lat: Double?, note: String): Boolean {
+        val n = note.lowercase()
+        return lat == null || n.contains("aakhri") || n.contains("live fix nahi") || n.contains("nahi mili")
+    }
 
     /** "/loc", "/loc@MyBot", "/saver on" -> Cmd. Anything else (plain text, unknown) -> null. */
     fun parse(text: String?): Cmd? {

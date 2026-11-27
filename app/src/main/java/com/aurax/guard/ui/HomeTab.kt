@@ -106,6 +106,56 @@ class HomeTab(
         hero.addView(siren)
         body.addView(hero)
 
+        // ---- essentials: the four things worth a glance ----
+        try {
+            val sm0 = com.aurax.guard.smart.SmartPrefs
+            val ess = com.aurax.guard.smart.EssentialsRules.items(
+                on, com.aurax.guard.GuardService.instance != null, sm0.lockdownOn(c),
+                com.aurax.guard.telegram.TelegramConfig.configured(c), com.aurax.guard.telegram.TelegramConfig.enabled(c), com.aurax.guard.remote.RemotePrefs.masterOn(c),
+                Prefs.alertTypeOn(c, com.aurax.guard.AlertType.WRONG_UNLOCK.key), camOn, adminOn,
+                try { com.aurax.guard.DeviceInfo.read(c).batteryPct } catch (_: Exception) { -1 }, sm0.traceOn(c), com.aurax.guard.smart.BatterySaver.active(c),
+            )
+            val ec = Ui.card(c, null, 12, drops = 0)
+            ess.forEach { it0 ->
+                val col = when (it0.kind) {
+                    com.aurax.guard.smart.StatusKind.ACTIVE, com.aurax.guard.smart.StatusKind.READY -> Ui.emerald
+                    com.aurax.guard.smart.StatusKind.QUEUED, com.aurax.guard.smart.StatusKind.ATTENTION -> Ui.amber
+                    else -> Ui.dim
+                }
+                val row = LinearLayout(c).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(0, Ui.dp(c, 5), 0, Ui.dp(c, 5)) }
+                row.addView(Ui.text(c, it0.title, 14f).apply { layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) })
+                row.addView(Ui.badge(c, it0.label, col))
+                ec.addView(row)
+            }
+            body.addView(ec)
+        } catch (_: Exception) {
+        }
+
+        // ---- primary actions ----
+        try {
+            val lockNow = com.aurax.guard.smart.Lockdown.active(c)
+            fun big(label: String, sub: String, onState: Boolean, go: () -> Unit) = LinearLayout(c).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+                minimumHeight = Ui.dp(c, 72)
+                setPadding(Ui.dp(c, 6), Ui.dp(c, 10), Ui.dp(c, 6), Ui.dp(c, 10))
+                background = Ui.glass(c, 18, if (onState) Ui.emerald else null, strong = onState)
+                addView(Ui.text(c, label, 14f, bold = true).apply { gravity = Gravity.CENTER })
+                addView(Ui.text(c, sub, 11f, color = if (onState) Ui.emerald else Ui.dim).apply { gravity = Gravity.CENTER })
+                setOnClickListener { go() }
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { setMargins(Ui.dp(c, 4), 0, Ui.dp(c, 4), 0) }
+            }
+            val pr = LinearLayout(c).apply { orientation = LinearLayout.HORIZONTAL; layoutParams = Ui.lp(c, 10) }
+            pr.addView(big("Tactical Lockdown", if (lockNow) "Active: tap = band" else "Off: tap = chalu", lockNow) { actions.toggleLockdown(); refresh() })
+            pr.addView(big("Fast Imp Copy", "Verified copy", false) { actions.openFastCopy() })
+            pr.addView(big("Theme", if (Ui.cyber) "Cyber" else "Glass", Ui.cyber) { actions.toggleStyle() })
+            body.addView(pr)
+        } catch (_: Exception) {
+        }
+
+        // everything else sits under one "more tools" fold so the main screen stays simple
+        val more = LinearLayout(c).apply { orientation = LinearLayout.VERTICAL }
+
         // ---- status at a glance ----
         try {
             val sm = com.aurax.guard.smart.SmartPrefs
@@ -127,7 +177,7 @@ class HomeTab(
                 row.addView(Ui.badge(c, it0.label, col))
                 sc.addView(row)
             }
-            body.addView(sc)
+            more.addView(sc)
         } catch (_: Exception) {
         }
 
@@ -154,7 +204,7 @@ class HomeTab(
             rowQ.addView(q("Lockdown", if (lock) "Active" else "Off", lock) { actions.toggleLockdown(); refresh() })
             rowQ.addView(q("Theme", if (Ui.cyber) "Cyber" else "Glass", Ui.cyber) { actions.toggleStyle() })
             rowQ.addView(q("Live stream", "Events", false) { actions.openStream() })
-            body.addView(android.widget.HorizontalScrollView(c).apply {
+            more.addView(android.widget.HorizontalScrollView(c).apply {
                 isHorizontalScrollBarEnabled = false
                 setPadding(0, Ui.dp(c, 4), 0, Ui.dp(c, 4))
                 addView(rowQ)
@@ -198,12 +248,12 @@ class HomeTab(
                 Ui.chip(c, m.title, cur == m.key) { com.aurax.guard.smart.ModeProfiles.apply(c, m); refresh() }
             }, 8))
             md.addView(Ui.dimText(c, com.aurax.guard.smart.Mode.of(cur)?.desc ?: "Ek tap me sensitivity, grace aur siren set ho jate hain."))
-            body.addView(md)
+            more.addView(md)
         } catch (_: Exception) {
         }
 
         // ---- quick tiles ----
-        body.addView(Ui.text(c, "Quick actions", 17f, bold = true).apply { setPadding(0, Ui.dp(c, 20), 0, Ui.dp(c, 2)) })
+        more.addView(Ui.text(c, "Quick actions", 17f, bold = true).apply { setPadding(0, Ui.dp(c, 20), 0, Ui.dp(c, 2)) })
         val parkOn = Prefs.parkOn(c)
         val saverOn = com.aurax.guard.smart.BatterySaver.active(c)
         val sections = listOf(
@@ -233,7 +283,7 @@ class HomeTab(
             ),
         )
         sections.forEach { (title, tiles) ->
-            body.addView(Ui.text(c, title, 14f, bold = true, color = Ui.dim).apply { setPadding(Ui.dp(c, 4), Ui.dp(c, 14), 0, Ui.dp(c, 2)) })
+            more.addView(Ui.text(c, title, 14f, bold = true, color = Ui.dim).apply { setPadding(Ui.dp(c, 4), Ui.dp(c, 14), 0, Ui.dp(c, 2)) })
             tiles.chunked(2).forEach { pair ->
                 val r = LinearLayout(c).apply {
                     orientation = LinearLayout.HORIZONTAL
@@ -246,9 +296,23 @@ class HomeTab(
                         }
                     })
                 }
-                body.addView(r)
+                more.addView(r)
             }
         }
+
+        // ---- fold: remembers whether you left it open ----
+        val look = c.getSharedPreferences("look", android.content.Context.MODE_PRIVATE)
+        var open = try { look.getBoolean("home_more", false) } catch (_: Exception) { false }
+        more.visibility = if (open) View.VISIBLE else View.GONE
+        lateinit var foldBtn: Button
+        foldBtn = Ui.button(c, if (open) "Kam dikhayein" else "Aur tools, modes aur status dikhayein", Ui.Btn.GHOST, 12) {
+            open = !open
+            more.visibility = if (open) View.VISIBLE else View.GONE
+            foldBtn.text = if (open) "Kam dikhayein" else "Aur tools, modes aur status dikhayein"
+            try { look.edit().putBoolean("home_more", open).apply() } catch (_: Exception) {}
+        }
+        body.addView(foldBtn)
+        body.addView(more)
 
         // ---- snapshot ----
         body.addView(Ui.text(c, "Security snapshot", 17f, bold = true).apply { setPadding(0, Ui.dp(c, 20), 0, Ui.dp(c, 2)) })

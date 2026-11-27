@@ -39,9 +39,22 @@ class TabShell(private val act: Activity, controls: View, actions: HomeActions) 
         listOf(R.drawable.ic_nav_home, R.drawable.ic_stat_guard, R.drawable.ic_nav_clean, R.drawable.ic_nav_activity),
     ) { select(it) }
 
+    private val gear = TextView(act).apply {
+        text = "\u2699" // gear
+        textSize = 22f
+        gravity = android.view.Gravity.CENTER
+        setTextColor(Color.WHITE)
+        background = Ui.glass(act, 22, Ui.emerald, strong = true)
+        contentDescription = "Settings"
+        val s = Ui.dp(act, 44)
+        layoutParams = FrameLayout.LayoutParams(s, s, android.view.Gravity.TOP or android.view.Gravity.END).apply { setMargins(0, Ui.dp(act, 14), Ui.dp(act, 14), 0) }
+        setOnClickListener { actions.openSettings() }
+    }
+
     private val frame = FrameLayout(act).apply {
         tabViews.forEach { addView(it) }
         addView(controlsWrap)
+        addView(gear)
     }
 
     val root = LinearLayout(act).apply {

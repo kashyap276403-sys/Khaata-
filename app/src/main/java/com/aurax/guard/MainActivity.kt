@@ -567,6 +567,7 @@ class MainActivity : Activity(), HomeActions {
         com.aurax.guard.ui.Ui.setStyle(this, !com.aurax.guard.ui.Ui.cyber)
         recreate()
     }
+    override fun openSettings() = startActivity(Intent(this, com.aurax.guard.smart.SettingsHubActivity::class.java))
     override fun openStream() = startActivity(Intent(this, com.aurax.guard.ui.TelemetryActivity::class.java))
     override fun openFastCopy() = startActivity(Intent(this, com.aurax.guard.copy.FastCopyActivity::class.java))
     override fun toggleLockdown() {
